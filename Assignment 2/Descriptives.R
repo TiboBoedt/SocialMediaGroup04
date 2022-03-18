@@ -32,9 +32,6 @@ ethereum <- ethereum %>% distinct(text, .keep_all = TRUE)
 
 ###### INITIAL DESCRIPTIVES
 
-### WORD FREQUENCY PLOT
-
-
 
 ### WORDCLOUDS
 p_load(tm,wordcloud, wordcloud2, httr, tidyverse)
@@ -78,6 +75,17 @@ wordcloud2(d_bitcoin)
 #figpath <- "/Users/guillaumesuys/SocialMediaGroup04/twitter_bird.png"
 #wordcloud2(d_bitcoin, figPath = figpath, size = 1.5, color = "skyblue")
 #letterCloud(d_bitcoin, word = "BITCOIN", wordSize = 1)
+
+### WORD FREQUENCY PLOT
+df_bitcoin <- data.frame(word = names(v_bitcoin), freq = v_bitcoin)
+ggplot(df_bitcoin[1:20,], aes(x=reorder(word, freq), y=freq)) + 
+  geom_bar(stat="identity") +
+  xlab("Terms") + 
+  ylab("Count") + 
+  coord_flip() +
+  theme(axis.text=element_text(size=7)) +
+  ggtitle('Most common word frequency plot') +
+  #ggeasy::easy_center_title()
 
 ### VARIABLE IMPORTANCE
 p_load(SnowballC, slam, tm, randomForest)
@@ -291,5 +299,8 @@ plot_network <- function(object){
   plot(g, layout=layout, vertex.color=rainbow(4)[clusters$membership], vertex.frame.color=rainbow(4)[clusters$membership] )
 }
 plot_network(adj_mat)
+
+
+
 
 
