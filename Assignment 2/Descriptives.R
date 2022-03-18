@@ -8,25 +8,25 @@
 ###### IMPORT STATEMENTS
 library(pacman)
 p_load(rtweet)
-setwd("/Users/thomassuys/OneDrive/UGent/MA1 HIR/Semester2/SMWA/Scraping groupwork")
+setwd("/Users/guillaumedepraetere/Documents/Socialmediagroupwork/Scraping")
 
 # !! still need to select the altcoin, to compare correlations with bitcoin price movements
-bitcoin <- read_twitter_csv("Bitcoin_thomas.csv")
+bitcoin <- read_twitter_csv("Bitcoin_guillaume.csv")
 bitcoin <- bitcoin %>% distinct(text, .keep_all = TRUE)
 
-shiba_inu <- read_twitter_csv("ShibaInu_thomas.csv")
+shiba_inu <- read_twitter_csv("ShibaInu_guillaume.csv")
 shiba_inu <- shiba_inu %>% distinct(text, .keep_all = TRUE)
 
-cardano <- read_twitter_csv("Cardano_thomas.csv")
+cardano <- read_twitter_csv("Cardano_guillaume.csv")
 cardano <- cardano %>% distinct(text, .keep_all = TRUE)
 
-sandbox <- read_twitter_csv("TheSandbox_thomas.csv")
+sandbox <- read_twitter_csv("TheSandbox_guillaume.csv")
 sandbox <- sandbox %>% distinct(text, .keep_all = TRUE)
 
-dogecoin <- read_twitter_csv("Dogecoin_thomas.csv")
+dogecoin <- read_twitter_csv("Dogecoin_guillaume.csv")
 dogecoin <- dogecoin %>% distinct(text, .keep_all = TRUE)
 
-ethereum <- read_twitter_csv("Ethereum_thomas.csv")
+ethereum <- read_twitter_csv("Ethereum_guillaume.csv")
 ethereum <- ethereum %>% distinct(text, .keep_all = TRUE)
 
 
@@ -71,7 +71,7 @@ d_bitcoin <- d_bitcoin %>% filter(word != tolower(search.string6)) %>% arrange(d
 wordcloud2(d_bitcoin)
 
 # does not work, common problem: silently failing wordcloud
-#figpath <- "/Users/thomassuys/SocialMediaGroup04/twitter_bird.png"
+#figpath <- "/Users/guillaumesuys/SocialMediaGroup04/twitter_bird.png"
 #wordcloud2(d_bitcoin, figPath = figpath, size = 1.5, color = "skyblue")
 #letterCloud(d_bitcoin, word = "BITCOIN", wordSize = 1)
 
@@ -103,7 +103,7 @@ varImpPlot(rf, type = 1)
 ### Word embeddings
 p_load(word2vec, text2vec, Rtsne, scales, ggrepel, tidyverse, tm)
 
-text_bitcoin <- tweets_data(bitcoin[1:500,]) %>% pull(text)    # vector memory exhausted?
+text_bitcoin <- tweets_data(bitcoin[1:1000,]) %>% pull(text)    # vector memory exhausted?
 
 text_clean <- text_bitcoin %>%
   str_to_lower() %>%
@@ -127,9 +127,16 @@ model <- word2vec(x = text_clean,
 
 embedding <- as.matrix(model)
 
-#lookslike <- predict(model, c("solid", "ipad"), type = "nearest", top_n = 5)
+lookslike <- predict(model, c("metaverse", "asset"), type = "nearest", top_n = 5)
+wv <- predict(model, newdata = c("bitcoin", "asset", "metaverse"), type = "embedding")
+wv <- wv["bitcoin", ] - wv["asset", ] + wv["metaverse", ]
+predict(model, newdata = wv, type = "nearest", top_n = 3)
 
 #look for analogies
+wv <- predict(model, newdata = c("bitcoin", "asset", "metaverse"), type = "embedding")
+wv <- wv["bitcoin", ] - wv["asset", ] + wv["metaverse", ]
+predict(model, newdata = wv, type = "nearest", top_n = 3)
+
 
 train_df <- data.frame(embedding) %>% 
   rownames_to_column("word")
