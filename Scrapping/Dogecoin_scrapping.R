@@ -14,8 +14,8 @@ for(i in 1:length(search.string)){
 }
 
 #csv inladen
-Dogecoin_csv <- read_twitter_csv("Scrapping\\Dogecoin.csv")
+Dogecoin_csv <- read_twitter_csv("C:\\Users\\Boedt\\OneDrive\\Bureaublad\\Csv_Scrapping\\Dogecoin.csv")
 #tweets toevegen
 tweets <- rbind(Dogecoin_csv, tweets)
 #csv writen
-write_as_csv(tweets, "Scrapping\\Dogecoin")
+write_as_csv(tweets, "C:\\Users\\Boedt\\OneDrive\\Bureaublad\\Csv_Scrapping\\Dogecoin")

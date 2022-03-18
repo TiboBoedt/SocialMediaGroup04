@@ -14,8 +14,8 @@ for(i in 1:length(search.string)){
 }
 
 #csv inladen
-Cardano_csv <- read_twitter_csv("Scrapping\\Cardano.csv")
+Cardano_csv <- read_twitter_csv("C:\\Users\\Boedt\\OneDrive\\Bureaublad\\Csv_Scrapping\\Cardano.csv")
 #tweets toevegen
 tweets <- rbind(Cardano_csv, tweets)
 #csv writen
-write_as_csv(tweets, "Scrapping\\Cardano")
+write_as_csv(tweets, "C:\\Users\\Boedt\\OneDrive\\Bureaublad\\Csv_Scrapping\\Cardano")

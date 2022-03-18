@@ -14,8 +14,8 @@ for(i in 1:length(search.string)){
 }
 
 #csv inladen
-bitcoin_csv <- read_twitter_csv("Scrapping\\Bitcoin.csv")
+bitcoin_csv <- read_twitter_csv("C:\\Users\\Boedt\\OneDrive\\Bureaublad\\Csv_Scrapping\\Bitcoin.csv")
 #tweets toevegen
 tweets <- rbind(bitcoin_csv, tweets)
 #csv writen
-write_as_csv(tweets, "Bitcoin")
+write_as_csv(tweets, "C:\\Users\\Boedt\\OneDrive\\Bureaublad\\Csv_Scrapping\\Bitcoin")
