@@ -32,6 +32,10 @@ ethereum <- ethereum %>% distinct(text, .keep_all = TRUE)
 
 ###### INITIAL DESCRIPTIVES
 
+### WORD FREQUENCY PLOT
+
+
+
 ### WORDCLOUDS
 p_load(tm,wordcloud, wordcloud2, httr, tidyverse)
 
@@ -192,7 +196,7 @@ top_terms %>%
   mutate(term = reorder(term, beta)) %>%
   ggplot(aes(term, beta, fill = factor(topic))) +
   geom_col(show.legend = FALSE) +
-  facet_wrap(~ topic, scales = "free") +
+  facet_wrap(~ topic, scales = "free") + 
   coord_flip()
 
 
