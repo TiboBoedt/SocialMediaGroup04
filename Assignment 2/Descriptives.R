@@ -185,7 +185,7 @@ head(sort(cos_sim_test[,1], decreasing = TRUE), 10)
 
 
 # predict
-wv <- predict(model, newdata = c("bitcoin", "asset", "metaverse"), type = "embedding")
+wv <- predict(model, newdata = c("bitcoin", "asset", "metaverse"), type = "embedding") 
 wv <- wv["bitcoin", ] - wv["asset", ] + wv["metaverse", ]
 predict(model, newdata = wv, type = "nearest", top_n = 3)
 
