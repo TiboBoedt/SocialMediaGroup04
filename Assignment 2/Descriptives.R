@@ -9,13 +9,26 @@
 library(pacman)
 p_load(rtweet)
 setwd("/Users/thomassuys/OneDrive/UGent/MA1 HIR/Semester2/SMWA/Scraping groupwork")
+
 # !! still need to select the altcoin, to compare correlations with bitcoin price movements
 bitcoin <- read_twitter_csv("Bitcoin_thomas.csv")
+bitcoin <- bitcoin %>% distinct(text, .keep_all = TRUE)
+
 shiba_inu <- read_twitter_csv("ShibaInu_thomas.csv")
+shiba_inu <- shiba_inu %>% distinct(text, .keep_all = TRUE)
+
 cardano <- read_twitter_csv("Cardano_thomas.csv")
+cardano <- cardano %>% distinct(text, .keep_all = TRUE)
+
 sandbox <- read_twitter_csv("TheSandbox_thomas.csv")
+sandbox <- sandbox %>% distinct(text, .keep_all = TRUE)
+
 dogecoin <- read_twitter_csv("Dogecoin_thomas.csv")
+dogecoin <- dogecoin %>% distinct(text, .keep_all = TRUE)
+
 ethereum <- read_twitter_csv("Ethereum_thomas.csv")
+ethereum <- ethereum %>% distinct(text, .keep_all = TRUE)
+
 
 ###### INITIAL DESCRIPTIVES
 
