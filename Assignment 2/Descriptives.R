@@ -197,4 +197,88 @@ top_terms %>%
 
 
 ### WORD GRAPHS
+search_string <- c('#BTC', '#bitcoin','BITCOIN','BTC','bitcoin','btc')
+create_document_term_matrix <- function(data, search_string){
+  
+  p_load(SnowballC, tm)
+  myCorpus <- Corpus(VectorSource(data))
+  
+  cat("Transform to lower case \n")
+  myCorpus <- tm_map(myCorpus, content_transformer(tolower))
+  
+  cat("Remove punctuation \n")
+  myCorpus <- tm_map(myCorpus, removePunctuation)
+  
+  cat("Remove numbers \n")
+  myCorpus <- tm_map(myCorpus, removeNumbers)
+  
+  cat("Remove stopwords \n")
+  myStopwords <- c(stopwords('english'))
+  myCorpus <- tm_map(myCorpus, removeWords, myStopwords)
+  
+  cat("Remove search string \n")
+  search_string <- search_string
+  myCorpus <- tm_map(myCorpus, removeWords, search_string)
+  
+  # cat("Stem corpus \n")
+  # myCorpus = tm_map(myCorpus, stemDocument);
+  # myCorpus = tm_map(myCorpus, stemCompletion, dictionary=dictCorpus);
+  
+  cat("Create document by term matrix \n")
+  myDtm <- DocumentTermMatrix(myCorpus, control = list(wordLengths = c(2, Inf)))
+  myDtm
+}
+doc_term_mat <- create_document_term_matrix(text_clean, search_string)
+
+create_adjacency_matrix <- function(object, probs=0.99){
+  
+  #object = output from function create_document_term_matrix (a document by term matrix)
+  #probs = select only vertexes with degree greater than or equal to quantile given by the value of probs
+  
+  cat("Create adjacency matrix \n")
+  p_load(sna)
+  
+  mat <- as.matrix(object)
+  mat[mat >= 1] <- 1 #change to boolean (adjacency) matrix
+  Z <- t(mat) %*% mat
+  
+  cat("Apply filtering \n")
+  ind <- sna::degree(as.matrix(Z),cmode = "indegree") >= quantile(sna::degree(as.matrix(Z),cmode = "indegree"),probs=0.99)
+  #ind <- sna::betweenness(as.matrix(Z)) >= quantile(sna::betweenness(as.matrix(Z)),probs=0.99)
+  
+  Z <- Z[ind,ind]        
+  
+  cat("Resulting adjacency matrix has ",ncol(Z)," rows and columns \n")
+  dim(Z)
+  list(Z=Z,termbydocmat=object,ind=ind)
+}
+adj_mat <- create_adjacency_matrix(doc_term_mat)
+
+plot_network <- function(object){
+  #Object: output from the create_adjacency_matrix function
+  
+  #Create graph from adjacency matrix
+  p_load(igraph)
+  g <- graph.adjacency(object$Z, weighted=TRUE, mode ='undirected')
+  g <- simplify(g)
+  
+  #Set labels and degrees of vertices
+  V(g)$label <- V(g)$name
+  V(g)$degree <- igraph::degree(g)
+  
+  layout <- layout.auto(g)
+  opar <- par()$mar; par(mar=rep(0, 4)) #Give the graph lots of room
+  #Adjust the widths of the edges and add distance measure labels
+  #Use 1 - binary (?dist) a proportion distance of two vectors
+  #The binary distance (or Jaccard distance) measures the dissimilarity, so 1 is perfect and 0 is no overlap (using 1 - binary)
+  edge.weight <- 7  #A maximizing thickness constant
+  z1 <- edge.weight*(1-dist(t(object$termbydocmat)[object$ind,], method="binary"))
+  E(g)$width <- c(z1)[c(z1) != 0] #Remove 0s: these won't have an edge
+  clusters <- spinglass.community(g)
+  cat("Clusters found: ", length(clusters$csize),"\n")
+  cat("Modularity: ", clusters$modularity,"\n")
+  plot(g, layout=layout, vertex.color=rainbow(4)[clusters$membership], vertex.frame.color=rainbow(4)[clusters$membership] )
+}
+plot_network(adj_mat)
+
 
