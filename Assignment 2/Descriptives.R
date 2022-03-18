@@ -40,7 +40,7 @@ p_load(tm,wordcloud, wordcloud2, httr, tidyverse)
 
 # text preprocessing of the tweets
 forremoval <- stopwords('english')
-text_bitcoin <- tweets_data(bitcoin[1:1000,]) %>% pull(text)    # vector memory exhausted?
+text_bitcoin <- tweets_data(bitcoin) %>% pull(text)    # vector memory exhausted?
 text_bitcoin_cleaned <- Corpus(VectorSource(text_bitcoin)) %>%
   tm_map(content_transformer(str_to_lower)) %>%
   tm_map(removePunctuation) %>% 
@@ -77,14 +77,13 @@ wordcloud2(d_bitcoin)
 #letterCloud(d_bitcoin, word = "BITCOIN", wordSize = 1)
 
 ### WORD FREQUENCY PLOT
-df_bitcoin <- data.frame(word = names(v_bitcoin), freq = v_bitcoin)
-ggplot(df_bitcoin[1:20,], aes(x=reorder(word, freq), y=freq)) + 
+ggplot(d_bitcoin[1:20,], aes(x=reorder(word, freq), y=freq)) + 
   geom_bar(stat="identity") +
   xlab("Terms") + 
   ylab("Count") + 
   coord_flip() +
   theme(axis.text=element_text(size=7)) +
-  ggtitle('Most common word frequency plot') +
+  ggtitle('Most common word frequency plot')
   #ggeasy::easy_center_title()
 
 ### VARIABLE IMPORTANCE
