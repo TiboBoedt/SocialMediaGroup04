@@ -1,4 +1,5 @@
 get_token()
+setwd("/Users/thomassuys/OneDrive/UGent/MA1 HIR/Semester2/SMWA/Scraping groupwork")
 
 #strings
 search.string <- c("ETH", "#ETH", "#Ethereum", "Ethereum")
@@ -14,8 +15,8 @@ for(i in 1:length(search.string)){
 }
 
 #csv inladen
-Ethereum_csv <- read_twitter_csv("Scrapping\\Ethereum.csv")
+Ethereum_csv <- read_twitter_csv("Ethereum_thomas.csv")
 #tweets toevegen
-tweets <- rbind(Ethereum_csv, tweets)
+tweets_final <- rbind(Ethereum_csv, tweets)
 #csv writen
-write_as_csv(tweets, "Scrapping\\Ethereum")
+write_as_csv(tweets_final, "Ethereum_thomas")

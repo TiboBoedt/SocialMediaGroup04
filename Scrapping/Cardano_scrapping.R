@@ -1,4 +1,5 @@
 get_token()
+setwd("/Users/thomassuys/OneDrive/UGent/MA1 HIR/Semester2/SMWA/Scraping groupwork")
 
 #strings
 search.string <- c("ADA", "#ADA", "#Cardano", "Cardano")
@@ -14,8 +15,8 @@ for(i in 1:length(search.string)){
 }
 
 #csv inladen
-Cardano_csv <- read_twitter_csv("Scrapping\\Cardano.csv")
+Cardano_csv <- read_twitter_csv("Cardano_thomas.csv")
 #tweets toevegen
-tweets <- rbind(Cardano_csv, tweets)
+tweets_final <- rbind(Cardano_csv, tweets)
 #csv writen
-write_as_csv(tweets, "Scrapping\\Cardano")
+write_as_csv(tweets_final, "Cardano_thomas")

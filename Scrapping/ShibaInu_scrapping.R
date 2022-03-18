@@ -1,4 +1,5 @@
 get_token()
+setwd("/Users/thomassuys/OneDrive/UGent/MA1 HIR/Semester2/SMWA/Scraping groupwork")
 
 #strings
 search.string <- c("SHIB", "#SHIB", "#ShibaInu", "ShibaInu", "Shiba Inu")
@@ -14,8 +15,8 @@ for(i in 1:length(search.string)){
 }
 
 #csv inladen
-ShibaInu_csv <- read_twitter_csv("Scrapping\\ShibaInu.csv")
+ShibaInu_csv <- read_twitter_csv("ShibaInu_thomas.csv")
 #tweets toevegen
-tweets <- rbind(ShibaInu_csv, tweets)
+tweets_final <- rbind(ShibaInu_csv, tweets)
 #csv writen
-write_as_csv(tweets, "Scrapping\\ShibaInu")
+write_as_csv(tweets_final, "ShibaInu_thomas")

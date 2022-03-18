@@ -1,4 +1,5 @@
 get_token()
+setwd("/Users/thomassuys/OneDrive/UGent/MA1 HIR/Semester2/SMWA/Scraping groupwork")
 
 #strings
 search.string <- c("#bitcoin", "BTC", "bitcoin", "#BTC")
@@ -14,8 +15,8 @@ for(i in 1:length(search.string)){
 }
 
 #csv inladen
-bitcoin_csv <- read_twitter_csv("Scrapping\\Bitcoin.csv")
+bitcoin_csv <- read_twitter_csv("Bitcoin_thomas.csv")
 #tweets toevegen
-tweets <- rbind(bitcoin_csv, tweets)
+tweets_final <- rbind(bitcoin_csv, tweets)
 #csv writen
-write_as_csv(tweets, "Bitcoin")
+write_as_csv(tweets_final, "Bitcoin_thomas")
