@@ -46,7 +46,7 @@ forremoval <- stopwords('english')
 text_bitcoin <- tweets_data(bitcoin[1:1000,]) %>% pull(text)    # vector memory exhausted?
 text_bitcoin_cleaned <- Corpus(VectorSource(text_bitcoin)) %>%
   tm_map(content_transformer(str_to_lower)) %>%
-  tm_map(removePunctuation) %>%
+  tm_map(removePunctuation) %>% 
   tm_map(removeNumbers) %>%
   tm_map(stripWhitespace) %>%
   tm_map(removeWords, c(forremoval))
