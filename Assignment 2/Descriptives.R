@@ -145,6 +145,46 @@ wv <- wv["bitcoin", ] - wv["asset", ] + wv["metaverse", ]
 predict(model, newdata = wv, type = "nearest", top_n = 3)
 
 #look for analogies
+lookslike <- predict(model, c("metaverse", "asset"), type = "nearest", top_n = 5)
+
+
+#look for analogies
+wv <- predict(model, newdata = c("bitcoin", "asset", "metaverse"), type = "embedding")
+wv <- wv["bitcoin", ] - wv["asset", ] + wv["metaverse", ]
+predict(model, newdata = wv, type = "nearest", top_n = 3)
+
+#now do the same with glove and look for differences
+tokens <- space_tokenizer(text_bitcoin %>%
+                            tolower() %>%
+                            removePunctuation() %>%
+                            removeWords(words = stopwords()) %>% 
+                            stripWhitespace())
+it <- itoken(tokens, progressbar = FALSE)
+vocab <- create_vocabulary(it)
+vocab <- prune_vocabulary(vocab, term_count_min = 3L)
+vectorizer <- vocab_vectorizer(vocab)
+tcm <- create_tcm(it, vectorizer, skip_grams_window = 5L)
+glove <- GloVe$new(rank = 86, 
+                   x_max = 5)
+word_vectors_main <- glove$fit_transform(tcm, 
+                                         n_iter = 50)
+word_vectors_components <- glove$components
+word_vectors <- word_vectors_main + t(word_vectors_components)
+lookslike_meta <- word_vectors["metaverse", ,drop = FALSE] 
+cos_sim <- sim2(x = word_vectors, y = lookslike_meta, 
+                method = "cosine", norm = "l2")
+head(sort(cos_sim[,1], decreasing = TRUE), 10)
+
+test <- word_vectors["bitcoin", , drop = FALSE] -
+  word_vectors["asset", , drop = FALSE] +
+  word_vectors["metaverse", , drop = FALSE]
+
+cos_sim_test <- sim2(x = word_vectors, y = test, 
+                     method = "cosine", norm = "l2")
+head(sort(cos_sim_test[,1], decreasing = TRUE), 10)
+
+
+# predict
 wv <- predict(model, newdata = c("bitcoin", "asset", "metaverse"), type = "embedding")
 wv <- wv["bitcoin", ] - wv["asset", ] + wv["metaverse", ]
 predict(model, newdata = wv, type = "nearest", top_n = 3)
