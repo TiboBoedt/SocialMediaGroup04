@@ -11,22 +11,22 @@ p_load(rtweet)
 setwd("/Users/thomassuys/OneDrive/UGent/MA1 HIR/Semester2/SMWA/Scraping groupwork")
 
 # !! still need to select the altcoin, to compare correlations with bitcoin price movements
-bitcoin <- read_twitter_csv("Bitcoin_thomas.csv")
+bitcoin <- read_twitter_csv("Bitcoin.csv")
 bitcoin <- bitcoin %>% distinct(text, .keep_all = TRUE)
 
-shiba_inu <- read_twitter_csv("ShibaInu_thomas.csv")
+shiba_inu <- read_twitter_csv("ShibaInu.csv")
 shiba_inu <- shiba_inu %>% distinct(text, .keep_all = TRUE)
 
-cardano <- read_twitter_csv("Cardano_thomas.csv")
+cardano <- read_twitter_csv("Cardano.csv")
 cardano <- cardano %>% distinct(text, .keep_all = TRUE)
 
-sandbox <- read_twitter_csv("TheSandbox_thomas.csv")
+sandbox <- read_twitter_csv("TheSandbox.csv")
 sandbox <- sandbox %>% distinct(text, .keep_all = TRUE)
 
-dogecoin <- read_twitter_csv("Dogecoin_thomas.csv")
+dogecoin <- read_twitter_csv("Dogecoin.csv")
 dogecoin <- dogecoin %>% distinct(text, .keep_all = TRUE)
 
-ethereum <- read_twitter_csv("Ethereum_thomas.csv")
+ethereum <- read_twitter_csv("Ethereum.csv")
 ethereum <- ethereum %>% distinct(text, .keep_all = TRUE)
 
 
@@ -49,9 +49,10 @@ text_bitcoin_cleaned <- Corpus(VectorSource(text_bitcoin)) %>%
   tm_map(removeWords, c(forremoval))
 
 tdm_bitcoin <- TermDocumentMatrix(text_bitcoin_cleaned)
-m_bitcoin <- as.matrix(tdm_bitcoin)
+tdm_bitcoin_sparse <- removeSparseTerms(tdm_bitcoin, sparse = 0.99)
+m_bitcoin <- as.matrix(tdm_bitcoin_sparse)
 v_bitcoin <- sort(rowSums(m_bitcoin),decreasing=TRUE)
-d_bitcoin <- tibble(word = names(v_bitcoin),freq=v_bitcoin)
+d_bitcoin <- data.frame(word = names(v_bitcoin),freq=v_bitcoin)
 
 # remove search strings and order
 search.string1 <- "#bitcoin"
@@ -70,7 +71,11 @@ d_bitcoin <- d_bitcoin %>% filter(word != tolower(search.string5))
 d_bitcoin <- d_bitcoin %>% filter(word != tolower(search.string6)) %>% arrange(desc(freq))
 
 wordcloud2(d_bitcoin)
-
+remove_words_string <- c("eth", "crypto", "nft", "price")
+for(i in 1:length(remove_words_string)){
+  d_bitcoin <- d_bitcoin %>% filter(word != remove_words_string[i])
+}
+wordcloud2(d_bitcoin)
 # does not work, common problem: silently failing wordcloud
 #figpath <- "/Users/guillaumesuys/SocialMediaGroup04/twitter_bird.png"
 #wordcloud2(d_bitcoin, figPath = figpath, size = 1.5, color = "skyblue")
@@ -84,7 +89,7 @@ ggplot(d_bitcoin[1:20,], aes(x=reorder(word, freq), y=freq)) +
   coord_flip() +
   theme(axis.text=element_text(size=7)) +
   ggtitle('Most common word frequency plot')
-  #ggeasy::easy_center_title()
+    #ggeasy::easy_center_title()
 
 ### VARIABLE IMPORTANCE
 p_load(SnowballC, slam, tm, randomForest)

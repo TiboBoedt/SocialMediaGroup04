@@ -14,17 +14,9 @@ for(i in 1:length(search.string)){
   }
 }
 
-#csv inladen
-<<<<<<< HEAD
 TheSandbox_csv <- read_twitter_csv("C:\\Users\\Boedt\\OneDrive\\Bureaublad\\Csv_Scrapping\\TheSandbox.csv")
-=======
-TheSandbox_csv <- read_twitter_csv("TheSandbox_thomas.csv")
->>>>>>> 9f987a183b4dbac2fb30b72e4a5612e02ace3a20
-#tweets toevegen
-tweets_final <- rbind(TheSandbox_csv, tweets)
-#csv writen
-<<<<<<< HEAD
+
+tweets <- rbind(TheSandbox_csv, tweets)
+
 write_as_csv(tweets, "C:\\Users\\Boedt\\OneDrive\\Bureaublad\\Csv_Scrapping\\TheSandbox.csv")
-=======
-write_as_csv(tweets_final, "TheSandbox_thomas")
->>>>>>> 9f987a183b4dbac2fb30b72e4a5612e02ace3a20
+

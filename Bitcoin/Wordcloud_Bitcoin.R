@@ -36,11 +36,11 @@ unique_word_count(btc_corpus) #functions stored in the FunctionsTekstManipulatio
 #Instead we check the total amount of unique words for different levels of sparsity 
 #we start by creating a document-term matrix
 btc_dtm <- DocumentTermMatrix(btc_corpus, control = list(wordlength = c(2,Inf)))
-sparsity_levels <- seq(from = 0.9, to = 0.99, by = 0.01)
+sparsity_levels <- seq(from = 0.99, to = 0.999, by = 0.001)
 for(i in sparsity_levels){
   print(paste("sparsity level:", i, "unique words =", 
         unique_word_count(removeSparseTerms(btc_dtm, sparse = i))), sep = "")
 }
 
-btc_dtm_sparse <- btc_dtm %>% removeSparseTerms(sparse = 0.9)
+btc_dtm_sparse <- btc_dtm %>% removeSparseTerms(sparse = 0.999)
 as.matrix(btc_dtm_sparse)
