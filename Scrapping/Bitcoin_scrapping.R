@@ -1,5 +1,6 @@
 get_token()
 
+setwd("/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Scraping")
 #strings
 search.string <- c("#bitcoin", "BTC", "bitcoin", "#BTC")
 
@@ -14,7 +15,7 @@ for(i in 1:length(search.string)){
 }
 
 #csv inladen
-bitcoin_csv <- read_twitter_csv("Scrapping\\Bitcoin.csv")
+bitcoin_csv <- read_twitter_csv("Bitcoin.csv")
 #tweets toevegen
 tweets <- rbind(bitcoin_csv, tweets)
 #csv writen

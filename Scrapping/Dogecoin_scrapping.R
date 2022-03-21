@@ -1,5 +1,5 @@
 get_token()
-
+setwd("/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Scraping")
 #strings
 search.string <- c("DOGE", "#DOGE", "#Dogecoin", "Dogecoin")
 
@@ -14,8 +14,8 @@ for(i in 1:length(search.string)){
 }
 
 #csv inladen
-Dogecoin_csv <- read_twitter_csv("Scrapping\\Dogecoin.csv")
+Dogecoin_csv <- read_twitter_csv("Dogecoin.csv")
 #tweets toevegen
 tweets <- rbind(Dogecoin_csv, tweets)
 #csv writen
-write_as_csv(tweets, "Scrapping\\Dogecoin")
+write_as_csv(tweets, "Dogecoin")

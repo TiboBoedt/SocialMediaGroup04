@@ -1,5 +1,5 @@
 get_token()
-
+setwd("/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Scraping")
 #strings
 search.string <- c("ETH", "#ETH", "#Ethereum", "Ethereum")
 
@@ -14,8 +14,8 @@ for(i in 1:length(search.string)){
 }
 
 #csv inladen
-Ethereum_csv <- read_twitter_csv("Scrapping\\Ethereum.csv")
+Ethereum_csv <- read_twitter_csv("Ethereum.csv")
 #tweets toevegen
 tweets <- rbind(Ethereum_csv, tweets)
 #csv writen
-write_as_csv(tweets, "Scrapping\\Ethereum")
+write_as_csv(tweets, "Ethereum")
