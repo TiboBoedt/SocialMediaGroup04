@@ -278,24 +278,34 @@ getLD <- function(data){
 #we currently have 9 variables, let's add a safety of 3. This would make 12*7 = 840 ~ 850.
 #We will select 850 random observations from the current dataset. 
 
-spam_size = 850
+#don't even think about touching this part of the code
+################################################################################
+#spam_size = 850
 
 #labels <- numeric(850)
 #1 = spam
 #0 = quality
 
-set.seed(1)
-bitcoin_spam_subset <- sample_n(bitcoin, spam_size)
-write_csv(bitcoin_spam_subset, "bitcoin_spam_subset.csv")
-save(labels, file = "SpamLabelVector.rda")
-#which labels have been analyzed: 60
-for(i in 41:60){
-  print(bitcoin_spam_subset$text[i])
-  print("Label: ")
-  labels[i] = readline()
-}
+#set.seed(1)
+#bitcoin_spam_subset <- sample_n(bitcoin, spam_size)
+#write_csv(bitcoin_spam_subset, "bitcoin_spam_subset.csv")
+#save(labels, file = "SpamLabelVector.rda")
+#which labels have been analyzed: 850/850
+#for(i in 851:851){
+  #print(bitcoin_spam_subset$text[i])
+  #print("Label: ")
+  #labels[i] = readline()
+#}
+
+#All 850 tweets are labbeld
+#in the next steps we first add the label row to the dataset and than create some 
+#more variables that become clear during the labbeling! 
+
+#bitcoin_spam_dataset <- data.frame(bitcoin_spam_subset, spam = as.numeric(labels))
+#write.csv(bitcoin_spam_dataset,"bitcoin_spam_dataset.csv")
 
 
+#################################################################################
 ### LEXICON APPROACH
 ################################################################################
 #In this part of the code we analyse the sentiment around bitcoin on a daily base,
