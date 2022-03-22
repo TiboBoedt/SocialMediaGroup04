@@ -35,3 +35,5 @@ library(topicmodels)
 library(textdata)
 library(quantmod)
 library(purrr)
+library(twitteR)
+

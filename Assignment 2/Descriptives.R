@@ -8,30 +8,29 @@
 ###### IMPORT STATEMENTS
 library(pacman)
 p_load(rtweet)
-setwd("/Users/thomassuys/OneDrive/UGent/MA1 HIR/Semester2/SMWA/Scraping groupwork")
+setwd("/Users/guillaumedepraetere/Documents/Socialmediagroupwork/Scraping")
 
 # !! still need to select the altcoin, to compare correlations with bitcoin price movements
-bitcoin <- read_twitter_csv("Bitcoin.csv")
+bitcoin <- read_twitter_csv("Bitcoin_guillaume.csv")
 bitcoin <- bitcoin %>% distinct(text, .keep_all = TRUE)
 
-shiba_inu <- read_twitter_csv("ShibaInu.csv")
+shiba_inu <- read_twitter_csv("ShibaInu_guillaume.csv")
 shiba_inu <- shiba_inu %>% distinct(text, .keep_all = TRUE)
 
-cardano <- read_twitter_csv("Cardano.csv")
+cardano <- read_twitter_csv("Cardano_guillaume.csv")
 cardano <- cardano %>% distinct(text, .keep_all = TRUE)
 
-sandbox <- read_twitter_csv("TheSandbox.csv")
+sandbox <- read_twitter_csv("TheSandbox_guillaume.csv")
 sandbox <- sandbox %>% distinct(text, .keep_all = TRUE)
 
-dogecoin <- read_twitter_csv("Dogecoin.csv")
+dogecoin <- read_twitter_csv("Dogecoin_guillaume.csv")
 dogecoin <- dogecoin %>% distinct(text, .keep_all = TRUE)
 
-ethereum <- read_twitter_csv("Ethereum.csv")
+ethereum <- read_twitter_csv("Ethereum_guillaume.csv")
 ethereum <- ethereum %>% distinct(text, .keep_all = TRUE)
 
 
 ###### INITIAL DESCRIPTIVES
-
 
 ### WORDCLOUDS
 p_load(tm,wordcloud, wordcloud2, httr, tidyverse)
@@ -40,19 +39,18 @@ p_load(tm,wordcloud, wordcloud2, httr, tidyverse)
 
 # text preprocessing of the tweets
 forremoval <- stopwords('english')
-text_bitcoin <- tweets_data(bitcoin) %>% pull(text)    # vector memory exhausted?
+text_bitcoin <- tweets_data(bitcoin[1:1000,]) %>% pull(text)    # vector memory exhausted?
 text_bitcoin_cleaned <- Corpus(VectorSource(text_bitcoin)) %>%
   tm_map(content_transformer(str_to_lower)) %>%
-  tm_map(removePunctuation) %>% 
+  tm_map(removePunctuation) %>%
   tm_map(removeNumbers) %>%
   tm_map(stripWhitespace) %>%
   tm_map(removeWords, c(forremoval))
 
 tdm_bitcoin <- TermDocumentMatrix(text_bitcoin_cleaned)
-tdm_bitcoin_sparse <- removeSparseTerms(tdm_bitcoin, sparse = 0.99)
-m_bitcoin <- as.matrix(tdm_bitcoin_sparse)
+m_bitcoin <- as.matrix(tdm_bitcoin)
 v_bitcoin <- sort(rowSums(m_bitcoin),decreasing=TRUE)
-d_bitcoin <- data.frame(word = names(v_bitcoin),freq=v_bitcoin)
+d_bitcoin <- tibble(word = names(v_bitcoin),freq=v_bitcoin)
 
 # remove search strings and order
 search.string1 <- "#bitcoin"
@@ -71,25 +69,11 @@ d_bitcoin <- d_bitcoin %>% filter(word != tolower(search.string5))
 d_bitcoin <- d_bitcoin %>% filter(word != tolower(search.string6)) %>% arrange(desc(freq))
 
 wordcloud2(d_bitcoin)
-remove_words_string <- c("eth", "crypto", "nft", "price")
-for(i in 1:length(remove_words_string)){
-  d_bitcoin <- d_bitcoin %>% filter(word != remove_words_string[i])
-}
-wordcloud2(d_bitcoin)
+
 # does not work, common problem: silently failing wordcloud
 #figpath <- "/Users/guillaumesuys/SocialMediaGroup04/twitter_bird.png"
 #wordcloud2(d_bitcoin, figPath = figpath, size = 1.5, color = "skyblue")
 #letterCloud(d_bitcoin, word = "BITCOIN", wordSize = 1)
-
-### WORD FREQUENCY PLOT
-ggplot(d_bitcoin[1:20,], aes(x=reorder(word, freq), y=freq)) + 
-  geom_bar(stat="identity") +
-  xlab("Terms") + 
-  ylab("Count") + 
-  coord_flip() +
-  theme(axis.text=element_text(size=7)) +
-  ggtitle('Most common word frequency plot')
-    #ggeasy::easy_center_title()
 
 ### VARIABLE IMPORTANCE
 p_load(SnowballC, slam, tm, randomForest)
@@ -149,47 +133,7 @@ wv <- wv["bitcoin", ] - wv["asset", ] + wv["metaverse", ]
 predict(model, newdata = wv, type = "nearest", top_n = 3)
 
 #look for analogies
-lookslike <- predict(model, c("metaverse", "asset"), type = "nearest", top_n = 5)
-
-
-#look for analogies
 wv <- predict(model, newdata = c("bitcoin", "asset", "metaverse"), type = "embedding")
-wv <- wv["bitcoin", ] - wv["asset", ] + wv["metaverse", ]
-predict(model, newdata = wv, type = "nearest", top_n = 3)
-
-#now do the same with glove and look for differences
-tokens <- space_tokenizer(text_bitcoin %>%
-                            tolower() %>%
-                            removePunctuation() %>%
-                            removeWords(words = stopwords()) %>% 
-                            stripWhitespace())
-it <- itoken(tokens, progressbar = FALSE)
-vocab <- create_vocabulary(it)
-vocab <- prune_vocabulary(vocab, term_count_min = 3L)
-vectorizer <- vocab_vectorizer(vocab)
-tcm <- create_tcm(it, vectorizer, skip_grams_window = 5L)
-glove <- GloVe$new(rank = 86, 
-                   x_max = 5)
-word_vectors_main <- glove$fit_transform(tcm, 
-                                         n_iter = 50)
-word_vectors_components <- glove$components
-word_vectors <- word_vectors_main + t(word_vectors_components)
-lookslike_meta <- word_vectors["metaverse", ,drop = FALSE] 
-cos_sim <- sim2(x = word_vectors, y = lookslike_meta, 
-                method = "cosine", norm = "l2")
-head(sort(cos_sim[,1], decreasing = TRUE), 10)
-
-test <- word_vectors["bitcoin", , drop = FALSE] -
-  word_vectors["asset", , drop = FALSE] +
-  word_vectors["metaverse", , drop = FALSE]
-
-cos_sim_test <- sim2(x = word_vectors, y = test, 
-                     method = "cosine", norm = "l2")
-head(sort(cos_sim_test[,1], decreasing = TRUE), 10)
-
-
-# predict
-wv <- predict(model, newdata = c("bitcoin", "asset", "metaverse"), type = "embedding") 
 wv <- wv["bitcoin", ] - wv["asset", ] + wv["metaverse", ]
 predict(model, newdata = wv, type = "nearest", top_n = 3)
 
@@ -255,7 +199,7 @@ top_terms %>%
   mutate(term = reorder(term, beta)) %>%
   ggplot(aes(term, beta, fill = factor(topic))) +
   geom_col(show.legend = FALSE) +
-  facet_wrap(~ topic, scales = "free") + 
+  facet_wrap(~ topic, scales = "free") +
   coord_flip()
 
 
@@ -343,8 +287,5 @@ plot_network <- function(object){
   plot(g, layout=layout, vertex.color=rainbow(4)[clusters$membership], vertex.frame.color=rainbow(4)[clusters$membership] )
 }
 plot_network(adj_mat)
-
-
-
 
 

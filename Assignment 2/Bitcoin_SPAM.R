@@ -81,8 +81,8 @@ for(d in as.POSIXct(unique_dates)){
 }
 
 (daily_tweets_per_creator_summary <- data.frame(Date = unique_dates, Min = daily_min, Q1 = daily_1,
-                                               Median = daily_median, Mean = daily_mean,
-                                               Q3 = daily_3, Max = daily_max))
+                                                Median = daily_median, Mean = daily_mean,
+                                                Q3 = daily_3, Max = daily_max))
 #aside from the max (which we expect to be volitile, no big difference are present)
 
 ggplot(daily_tweets_per_creator_summary, aes(x = Date, y = Mean))+
