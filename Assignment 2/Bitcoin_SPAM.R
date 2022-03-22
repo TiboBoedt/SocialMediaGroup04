@@ -338,11 +338,18 @@ getRelNumberOfHashtags <- function(data){
 }
 
 bitcoin_spam_dataset$rel_hashtags <- getRelNumberOfHashtags(bitcoin_spam_dataset)
-
+bitcoin_spam_dataset$ld <- getLD(bitcoin_spam_dataset$text)
 #we write the final and correct file and never touch it again. This way it will not 
 #change!!!
 #write_csv(bitcoin_spam_dataset, "bitcoin_spam_dataset.csv")
 
+#Start of the Model!!
+################################################################################
+bitcoin_spam <- read_csv("bitcoin_spam_dataset.csv")
+#subset the variables
+bitcoin_spam <- bitcoin_spam[, c("nr_hashtags", "friends_count", "followers_count", 
+                                 "Reputation", "age_account_days", "rel_hashtags", 
+                                 "signal_words", "ttr", "ld", "spam")]
 #################################################################################
 ### LEXICON APPROACH
 ################################################################################
