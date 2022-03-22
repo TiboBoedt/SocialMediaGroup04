@@ -304,6 +304,44 @@ getLD <- function(data){
 #bitcoin_spam_dataset <- data.frame(bitcoin_spam_subset, spam = as.numeric(labels))
 #write.csv(bitcoin_spam_dataset,"bitcoin_spam_dataset.csv")
 
+#while labbeling the tweets I noticed that a lot of the spam tweets contain words 
+#like "free", "join now", "follow ...", "mining", "dm", "sign up" an much more. 
+#We make a variable containing a logical value indicating the present of these words 
+
+signal_words <- c("mining", "follow", "free", "join", "dm", "for free", "add", "whatsapp")
+
+getSignalWordIndicator <- function(data){
+  data <- data %>% str_to_lower() %>% str_replace_all("[[:punct:]]", "")
+  v <- str_split(data, " ")[[1]]
+  for(word in v){
+    if(word %in% signal_words){
+      return(TRUE)
+    }
+  }
+  return(FALSE)
+}
+
+bitcoin_spam_dataset$signal_words <- sapply(bitcoin_spam_dataset$text, getSignalWordIndicator) %>% reduce(c)
+summary(bitcoin_spam_dataset$signal_words)
+
+#a second variable we add is the proportion of the text that are hashtags
+getRelNumberOfHashtags <- function(data){
+  output <- numeric(length = length(data$text))
+  for(i in 1:length(data$text)){
+    t <- data$text %>% str_to_lower() %>% str_replace_all("[[:punct:]]", "")
+    l <- length(str_split(t[i], " ")[[1]])
+    nrh <- data$nr_hashtags[i] %>% reduce(c)
+    rel <- nrh/l
+    output[i] = rel
+  }
+  return(output)
+}
+
+bitcoin_spam_dataset$rel_hashtags <- getRelNumberOfHashtags(bitcoin_spam_dataset)
+
+#we write the final and correct file and never touch it again. This way it will not 
+#change!!!
+#write_csv(bitcoin_spam_dataset, "bitcoin_spam_dataset.csv")
 
 #################################################################################
 ### LEXICON APPROACH
