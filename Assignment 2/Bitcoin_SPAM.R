@@ -246,12 +246,33 @@ getLD <- function(data){
   return(ld)
 }
 
+
 ############################## Spam detection model ############################
 ################################################################################
+#In the previous part (Data Exploration) we took a closer look at the available
+#variables in the rtweet dataset resulting from scrapping tweets. 
+#
+#In the next phase we will develop a model that can detect spam tweets based on a 
+#set of variables. To avoid having to label a part of our own tweets as spam or quality
+#we will search for a only database similar in all aspects to our own database
+#which already contains the correct labeling. From the resulting model of this data-
+#base using Machine Learning techniques we will than filter our own database for spam. 
 
-### --- ###
+#Current available variables are:
+#
+#- number of followers
+#- number of friends (following)
+#- number of hashtags in the tweet
+#- age of the account (available in days and years)
+#- number of retweets
+#- number of likes 
+#- Reputation of the user ((friends)/(followers+friends))
+#- Type-token ratio
+#- lexical density
+
 
 ### LEXICON APPROACH
+################################################################################
 #In this part of the code we analyse the sentiment around bitcoin on a daily base,
 #using various lexicons. 
 
