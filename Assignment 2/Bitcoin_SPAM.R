@@ -269,6 +269,31 @@ getLD <- function(data){
 #- Reputation of the user ((friends)/(followers+friends))
 #- Type-token ratio
 #- lexical density
+#
+#
+#Given that we don't find a suitable dataset online, we will have to create or own
+#labels for the spam. We will do this as follows: 
+#1) We select a subset from the current database which we will label as spam or quality.
+#For the size of the selection we pick a 7 times (the number of variables + safety) ->
+#we currently have 9 variables, let's add a safety of 3. This would make 12*7 = 840 ~ 850.
+#We will select 850 random observations from the current dataset. 
+
+spam_size = 850
+
+#labels <- numeric(850)
+#1 = spam
+#0 = quality
+
+set.seed(1)
+bitcoin_spam_subset <- sample_n(bitcoin, spam_size)
+write_csv(bitcoin_spam_subset, "bitcoin_spam_subset.csv")
+save(labels, file = "SpamLabelVector.rda")
+#which labels have been analyzed: 60
+for(i in 41:60){
+  print(bitcoin_spam_subset$text[i])
+  print("Label: ")
+  labels[i] = readline()
+}
 
 
 ### LEXICON APPROACH
