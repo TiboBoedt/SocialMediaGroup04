@@ -374,7 +374,6 @@ bitcoin_spam_dataset$Activity[which(bitcoin_spam_dataset$Activity == Inf)] <- bi
 #we write the final and correct file and never touch it again. This way it will not 
 #change!!!
 #write_csv(bitcoin_spam_dataset, "bitcoin_spam_dataset.csv")
-
 #Start of the Model!!
 ################################################################################
 bitcoin_spam <- read_csv("bitcoin_spam_dataset.csv")
