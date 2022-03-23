@@ -386,12 +386,11 @@ library(caret)
 control <- trainControl(method='repeatedcv', number = 10, repeats = 3,
                         savePredictions = T, classProbs = T)
 
-mtry <- sqrt(ncol(train_x))
-tunegrid <- expand.grid(.mtry=mtry)
+tunegrid <- expand.grid(.mtry = c(1:8))
 variables_to_use <- colnames(train_data)[!(colnames(train_data) %in% c("spam", "screen_name", "ld"))]
 rf_model <- train(x = train_data[, variables_to_use], y = train_data$spam, data = train_data, method = "rf", 
                   trControl = control, preProcess = c("center","scale"),
-                  ntree = 500, tuneGrid = tunegrid)
+                  ntree = 500, tuneGrid = tunegrid, metric = 'Accuracy')
 
 ################################################################################
 ### LEXICON APPROACH
