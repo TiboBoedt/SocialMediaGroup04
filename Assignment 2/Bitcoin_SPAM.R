@@ -347,10 +347,53 @@ bitcoin_spam_dataset$ld <- getLD(bitcoin_spam_dataset$text)
 ################################################################################
 bitcoin_spam <- read_csv("bitcoin_spam_dataset.csv")
 #subset the variables
-bitcoin_spam <- bitcoin_spam[, c("nr_hashtags", "friends_count", "followers_count", 
+bitcoin_spam <- bitcoin_spam[, c("screen_name","nr_hashtags", "friends_count", "followers_count", 
                                  "Reputation", "age_account_days", "rel_hashtags", 
                                  "signal_words", "ttr", "ld", "spam")]
-#################################################################################
+
+#looking for and handling missing values
+sum(is.na(bitcoin_spam))
+apply(is.na(bitcoin_spam), 2, which) #NA's are in Reputation, because there are only two, we will remove them
+bitcoin_spam <- bitcoin_spam %>% drop_na(Reputation)
+#train and test set
+#to avoid having a connection between the train and test set we make sure that no user
+#in the train set is also present in the test set. Therefor we split train and test
+#based on different users
+size_split <- length(unique(bitcoin_spam$screen_name))
+size_split
+
+#train = 70% of unique screen_name and test 30%
+set.seed(1)
+names <- unique(bitcoin_spam$screen_name)
+train_names <- sample(names, size_split*0.7)
+test_names <- names[!(names %in% train_names)]
+intersect(train_names, test_names) #test if intersect is empty as it should
+
+train_data <- bitcoin_spam[which(bitcoin_spam$screen_name %in% train_names),]
+train_data$signal_words <- as.factor(train_data$signal_words)
+train_data$spam <- as.factor(train_data$spam)
+levels(train_data$spam) <- c("quality", "spam")
+
+test_data <- bitcoin_spam[which(bitcoin_spam$screen_name %in% test_names),]
+test_data$signal_words <- as.factor(test_data$signal_words)
+test_data$spam <- as.factor(test_data$spam)
+levels(test_data$spam) <- c("quality", "spam")
+
+#train the model
+library(caret)
+
+#set up the cross-validation, which we will use to asses the performance
+control <- trainControl(method='repeatedcv', number = 10, repeats = 3,
+                        savePredictions = T, classProbs = T)
+
+mtry <- sqrt(ncol(train_x))
+tunegrid <- expand.grid(.mtry=mtry)
+variables_to_use <- colnames(train_data)[!(colnames(train_data) %in% c("spam", "screen_name", "ld"))]
+rf_model <- train(x = train_data[, variables_to_use], y = train_data$spam, data = train_data, method = "rf", 
+                  trControl = control, preProcess = c("center","scale"),
+                  ntree = 500, tuneGrid = tunegrid)
+
+################################################################################
 ### LEXICON APPROACH
 ################################################################################
 #In this part of the code we analyse the sentiment around bitcoin on a daily base,
