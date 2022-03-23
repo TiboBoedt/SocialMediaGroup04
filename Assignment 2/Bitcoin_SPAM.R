@@ -338,7 +338,44 @@ getRelNumberOfHashtags <- function(data){
 }
 
 bitcoin_spam_dataset$rel_hashtags <- getRelNumberOfHashtags(bitcoin_spam_dataset)
-bitcoin_spam_dataset$ld <- getLD(bitcoin_spam_dataset$text)
+bitcoin_spam_dataset$ld <- lapply(bitcoin_spam_dataset$text, FUN = getLD) %>% reduce(c)
+#looked for more variables in a paper and will put them in after feedback assignment HRM
+
+#total number of digits in the screen name -> fake/spam accounts and thus tweets
+#typacilly have numbers in their name
+getDigitsInName <- function(data){
+  output <- numeric(length(data))
+  for(i in 1:length(data)){
+    nr <- str_count(data[i], "\\d")
+    output[i] = nr
+  }
+  return(output)
+}
+
+bitcoin_spam_dataset$digitsInName <- getDigitsInName(bitcoin_spam_dataset$screen_name)
+
+#spam tweets typically mention a lot of names to generate a wider range. We therefor
+#check the relationship between the number of characters in the mentions and the number
+#(length) of the text
+
+getCharMentionsOverText <- function(data){
+  output <- numeric(length = length(data$mentions_screen_name))
+  for(i in 1:length(data$mentions_screen_name)){
+    rel <- nchar(data$mentions_screen_name[i])/data$display_text_width[i]
+    output[i] <- rel
+  }
+  output[is.na(output)] <- 0 #na means that there where no mentions thus a zero in the denominator
+  return(output)
+}
+
+bitcoin_spam_dataset$MentionsRatio <- getCharMentionsOverText(bitcoin_spam_dataset)
+
+#Activity: how many tweets does the creators tweets on a daily base
+bitcoin_spam_dataset$Activity <- bitcoin_spam_dataset$statuses_count/bitcoin_spam_dataset$age_account_days
+
+bitcoin_spam_dataset$age_account_days[which(bitcoin_spam_dataset$Activity == Inf)]
+#Inf means the nominator is a zero -> new account -> all activity is from one day, so let's set equal to statuses_count
+bitcoin_spam_dataset$Activity[which(bitcoin_spam_dataset$Activity == Inf)] <- bitcoin_spam_dataset$statuses_count[which(bitcoin_spam_dataset$Activity == Inf)]
 #we write the final and correct file and never touch it again. This way it will not 
 #change!!!
 #write_csv(bitcoin_spam_dataset, "bitcoin_spam_dataset.csv")
@@ -349,7 +386,8 @@ bitcoin_spam <- read_csv("bitcoin_spam_dataset.csv")
 #subset the variables
 bitcoin_spam <- bitcoin_spam[, c("screen_name","nr_hashtags", "friends_count", "followers_count", 
                                  "Reputation", "age_account_days", "rel_hashtags", 
-                                 "signal_words", "ttr", "ld", "spam", "display_text_width", "retweet_count")]
+                                 "signal_words", "ttr", "ld", "spam", "display_text_width", "retweet_count",
+                                 "Activity", "MentionsRatio", "digitsInName")]
 
 #looking for and handling missing values
 sum(is.na(bitcoin_spam))
@@ -386,15 +424,14 @@ library(caret)
 control <- trainControl(method='repeatedcv', number = 10, repeats = 3,
                         savePredictions = T, classProbs = T)
 
-tunegrid <- expand.grid(.mtry = c(1:10))
-variables_to_use <- colnames(train_data)[!(colnames(train_data) %in% c("spam", "screen_name", "ld"))]
+variables_to_use <- colnames(train_data)[!(colnames(train_data) %in% c("spam", "screen_name"))]
+tunegrid <- expand.grid(.mtry = c(1:length(variables_to_use)))
 rf_model <- train(x = train_data[, variables_to_use], y = train_data$spam, data = train_data, method = "rf", 
                   trControl = control, preProcess = c("center","scale"),
                   ntree = 500, tuneGrid = tunegrid, metric = 'Accuracy')
 
 rf_model
 varImp(rf_model)
-bitcoin$display_text_width
 
 ################################################################################
 ### LEXICON APPROACH
