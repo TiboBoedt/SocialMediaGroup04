@@ -157,12 +157,6 @@ ggplot(bitcoin, aes(x = log(followers_count), y = favorite_count))+
 bitcoin$followers_rel <- bitcoin$friends_count/bitcoin$followers_count
 #if this number is 5, the user follows 5 times more accounts than accounts follow him
 summary(bitcoin$followers_rel) #inf -> zero followers
-#we check the relation of followers_rel with the age of an account
-ggplot(bitcoin, aes(y = followers_rel, x = age_account_years))+
-  geom_point(col = "blue")+
-  ylab("Relative number of followers")+
-  xlab("Age of the account of in years")+
-  ggtitle("Relation between relative followers and age of account")
 
 #there is also something as "Reputation" which is equal to the amount of friends
 #divided by the sum of friends and followers
@@ -307,7 +301,7 @@ getLD <- function(data){
 #while labbeling the tweets I noticed that a lot of the spam tweets contain words 
 #like "free", "join now", "follow ...", "mining", "dm", "sign up" an much more. 
 #We make a variable containing a logical value indicating the present of these words 
-
+bitcoin_spam_dataset <- read_csv("bitcoin_spam_dataset.csv")
 signal_words <- c("mining", "follow", "free", "join", "dm", "for free", "add", "whatsapp")
 
 getSignalWordIndicator <- function(data){
@@ -333,6 +327,7 @@ getRelNumberOfHashtags <- function(data){
     nrh <- data$nr_hashtags[i] %>% reduce(c)
     rel <- nrh/l
     output[i] = rel
+    print(i)
   }
   return(output)
 }
@@ -385,7 +380,7 @@ bitcoin_spam_dataset$Activity[which(bitcoin_spam_dataset$Activity == Inf)] <- bi
 bitcoin_spam <- read_csv("bitcoin_spam_dataset.csv")
 #subset the variables
 bitcoin_spam <- bitcoin_spam[, c("screen_name","nr_hashtags", "friends_count", "followers_count", 
-                                 "Reputation", "age_account_days", "rel_hashtags", 
+                                 "Reputation", "age_account_days", 
                                  "signal_words", "ttr", "ld", "spam", "display_text_width", "retweet_count",
                                  "Activity", "MentionsRatio", "digitsInName")]
 
@@ -419,7 +414,7 @@ levels(test_data$spam) <- c("quality", "spam")
 
 #train the model
 library(caret)
-
+library(MLeval)
 #set up the cross-validation, which we will use to asses the performance
 control <- trainControl(method='repeatedcv', number = 10, repeats = 3,
                         savePredictions = T, classProbs = T)
@@ -433,16 +428,48 @@ rf_model <- train(x = train_data[, variables_to_use], y = train_data$spam, data 
 rf_model
 varImp(rf_model)
 
+preds <- predict(rf_model, test_data[, variables_to_use], type = "prob")
+preds_value <- ifelse(preds$quality > 0.5, "quality", "spam")
+x <- evalm(rf_model)
+x$roc
+x$stdres
+
+table(preds_value, test_data$spam)
 ################################################################################
-### LEXICON APPROACH
+### Implementation of Spamfilter on full dataset!!
 ################################################################################
-#In this part of the code we analyse the sentiment around bitcoin on a daily base,
-#using various lexicons. 
+bitcoin
+bitcoin_spam <- read_csv("bitcoin_spam_dataset.csv")
 
-#load the dictionary provided in the lecture
-head(dictionary, 10)
+#before we can run the model, we perform two steps:
+#1) take out the observations used to train and test the model (we already have those labels)
+#2) add the newly added variables to the larger dataset (functions can be reused!)
 
-#reduce the 1 to 9 likert scale to -4 <--> 4 scale. 
-#dictionary <- dictionary %>% mutate(across(where(is.numeric), function(x) x - 5))
-head(dictionary, 10)
+bitcoin$MentionsRatio <- getCharMentionsOverText(bitcoin)
+bitcoin$digitsInName <- getDigitsInName(bitcoin$screen_name)
+bitcoin$signal_words <- sapply(bitcoin$text, FUN = getSignalWordIndicator) %>% reduce(c)
+bitcoin$signal_words <- factor(bitcoin$signal_words)
+bitcoin$Activity <- bitcoin$statuses_count/bitcoin$age_account_days
+bitcoin$age_account_days[which(bitcoin$Activity == Inf)]
+#Inf means the nominator is a zero -> new account -> all activity is from one day, so let's set equal to statuses_count
+bitcoin$Activity[which(bitcoin$Activity == Inf)] <- bitcoin$statuses_count[which(bitcoin$Activity == Inf)]
+bitcoin$ld <- lapply(bitcoin$text, FUN = getLD) %>% reduce(c)
 
+#remove the tweets of which we already have the labels (manualy)
+bitcoin %>% filter(!(bitcoin$text %in% bitcoin_spam$text))
+
+sum(is.na(bitcoin[, variables_to_use]))
+summary(bitcoin[, variables_to_use]) #same problem as test data we remove them as we assume them to be spam anyway
+bitcoin <- bitcoin %>% drop_na(Reputation)
+
+bitcoin_label <- predict(rf_model, newdata = bitcoin[, variables_to_use])
+
+bitcoin$spam <- bitcoin_label
+bitcoin$spam <- factor(bitcoin$spam)
+bitcoin_spam$spam <- factor(ifelse(bitcoin_spam$spam == 1, "spam", "quality"))
+bitcoin_spam <- subset(bitcoin_spam, select = -rel_hashtags)
+bitcoin_spam <- bitcoin_spam[, colnames(bitcoin)] #make sure columns are in same order
+bitcoin_no_spam <- rbind(bitcoin, bitcoin_spam)
+bitcoin_no_spam <- bitcoin_no_spam %>% filter(spam == "quality")
+
+#write_csv(bitcoin_no_spam, "bitcoin_no_spam.csv")
