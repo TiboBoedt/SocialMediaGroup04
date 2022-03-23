@@ -349,7 +349,7 @@ bitcoin_spam <- read_csv("bitcoin_spam_dataset.csv")
 #subset the variables
 bitcoin_spam <- bitcoin_spam[, c("screen_name","nr_hashtags", "friends_count", "followers_count", 
                                  "Reputation", "age_account_days", "rel_hashtags", 
-                                 "signal_words", "ttr", "ld", "spam")]
+                                 "signal_words", "ttr", "ld", "spam", "display_text_width", "retweet_count")]
 
 #looking for and handling missing values
 sum(is.na(bitcoin_spam))
@@ -386,11 +386,15 @@ library(caret)
 control <- trainControl(method='repeatedcv', number = 10, repeats = 3,
                         savePredictions = T, classProbs = T)
 
-tunegrid <- expand.grid(.mtry = c(1:8))
+tunegrid <- expand.grid(.mtry = c(1:10))
 variables_to_use <- colnames(train_data)[!(colnames(train_data) %in% c("spam", "screen_name", "ld"))]
 rf_model <- train(x = train_data[, variables_to_use], y = train_data$spam, data = train_data, method = "rf", 
                   trControl = control, preProcess = c("center","scale"),
                   ntree = 500, tuneGrid = tunegrid, metric = 'Accuracy')
+
+rf_model
+varImp(rf_model)
+bitcoin$display_text_width
 
 ################################################################################
 ### LEXICON APPROACH
