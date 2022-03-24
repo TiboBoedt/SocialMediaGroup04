@@ -427,6 +427,7 @@ rf_model <- train(x = train_data[, variables_to_use], y = train_data$spam, data 
 rf_model
 varImp(rf_model)
 
+#saveRDS(rf_model, "rf_spam_model.rds")
 preds <- predict(rf_model, test_data[, variables_to_use], type = "prob")
 preds_value <- ifelse(preds$quality > 0.5, "quality", "spam")
 x <- evalm(rf_model)
