@@ -5,7 +5,7 @@ generateWordcloud <- function(tweets_df, date = as_date(today()), cloud1 = T, wo
   #wordsToRemove -> vector containing extra words we need removed from the cloud
   
   #isolate the tweets from the given date
-  tweets_date <- tweets_df[which(as_date(tweets_df$created_at) == date),] %>% pull(text)
+  tweets_date <- tweets_df[which(as_date(tweets_df$created_at) %in% date),] %>% pull(text)
   
   if(is_empty(tweets_date)){
     cat("No tweets on this date in dataframe, try another date!")
