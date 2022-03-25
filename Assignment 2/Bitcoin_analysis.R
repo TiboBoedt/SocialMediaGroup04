@@ -180,3 +180,36 @@ predict(model_cbow4, newdata = c("bitstream", "taxed", "thailand"), type = "near
 predict(model_cbow4, newdata = c("pumping", "altseason"), type = "nearest", top_n = 5)
 predict(model_cbow4, newdata = c("plummets"), type = "nearest", top_n = 5)
 predict(model_cbow4, newdata = c("outperforms"), type = "nearest", top_n = 5)
+
+#it looks like changing the hyperparameters of the word2vec effect the analysis
+
+### GloVe
+tokens <- space_tokenizer(Bitcoin$text %>% tolower() %>% removePunctuation() %>%
+                            removeWords(words = stopwords()) %>% stripWhitespace())
+
+it <- itoken(tokens, progressbar = FALSE)
+vocab <- create_vocabulary(it)
+
+summary(vocab$term_count)
+vocab <- prune_vocabulary(vocab, term_count_min = 7L)
+
+vectorizer <- vocab_vectorizer(vocab)
+
+tcm <- create_tcm(it, vectorizer, skip_grams_window = 5L)
+
+glove <- GloVe$new(rank = 85, 
+                   x_max = 5)
+word_vectors_main <- glove$fit_transform(tcm, 
+                                         n_iter = 20)
+
+word_vectors_components <- glove$components
+word_vectors <- word_vectors_main + t(word_vectors_components)
+
+glove_bitcoin <- word_vectors["bitcoin",,drop = F]
+
+cos_sim <- sim2(x = word_vectors, y = glove_bitcoin, method = "cosine", norm = "l2")
+head(sort(cos_sim[,1], decreasing = TRUE), 10)
+
+glove_btc <- word_vectors["btc",,drop = F]
+cos_sim <- sim2(x = word_vectors, y = glove_btc, method = "cosine", norm = "l2")
+head(sort(cos_sim[,1], decreasing = TRUE), 10)
