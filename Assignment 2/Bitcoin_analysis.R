@@ -213,3 +213,109 @@ head(sort(cos_sim[,1], decreasing = TRUE), 10)
 glove_btc <- word_vectors["btc",,drop = F]
 cos_sim <- sim2(x = word_vectors, y = glove_btc, method = "cosine", norm = "l2")
 head(sort(cos_sim[,1], decreasing = TRUE), 10)
+#we see the word buy pop up! 
+
+glove_buy <- word_vectors["buy",,drop = F]
+cos_sim <- sim2(x = word_vectors, y = glove_buy, method = "cosine", norm = "l2")
+head(sort(cos_sim[,1], decreasing = TRUE), 10)
+#buy and sell? buy the dip/now??
+
+glove_sell <- word_vectors["sell",, drop = F]
+cos_sim <- sim2(x = word_vectors, y = glove_sell, method = "cosine", norm = "l2")
+head(sort(cos_sim[,1], decreasing = TRUE), 10)
+
+glove_dip <- word_vectors["dip",,drop = F]
+cos_sim <- sim2(x = word_vectors, y = glove_dip, method = "cosine", norm = "l2")
+head(sort(cos_sim[,1], decreasing = TRUE), 10)
+
+glove_pump <- word_vectors["pump",,drop = F]
+cos_sim <- sim2(x = word_vectors, y = glove_pump, method = "cosine", norm = "l2")
+head(sort(cos_sim[,1], decreasing = TRUE), 10)
+
+## T-SNE
+#we will now try to visualize the embedding from the glove algorithmen using t-sne.
+#We do this with different values for the hyperparameters
+train_df <- data.frame(word_vectors) %>% rownames_to_column("word")
+
+tsne1 <- Rtsne(train_df[,-1], dims = 2, perplexity = 30, verbose=TRUE, max_iter = 500)
+
+colors = rainbow(length(unique(train_df$word)))
+names(colors) = unique(train_df$word)
+
+plot_df <- data.frame(tsne1$Y) %>%
+  mutate(
+    word = train_df$word,
+    col = colors[train_df$word]) %>%
+  left_join(vocab, by = c("word" = "term")) 
+
+ggplot(plot_df, aes(X1, X2, label = word, color = col)) + 
+  geom_text(size = 4) +
+  xlab("") + ylab("") +
+  theme(legend.position = "none")  
+
+#-> to many words for the visualization to be usefull, maybe remove some sparse words
+#in the vector step. 
+
+### TOPIC MODELING
+#as a final step in getting to know the content of the tweets we execute a topic
+#analysis on the data. 
+
+#get and clean the text
+topic_text <- Bitcoin %>% pull(text) %>% str_to_lower() %>% str_replace_all("[[:punct:]]", "") %>%
+  str_replace_all("[[:digit:]]", "") %>% str_squish()
+
+text_df <- tibble(doc = 1:length(topic_text), text = topic_text)
+head(text_df, 10)
+
+freq <- text_df %>% unnest_tokens(word, text) %>% anti_join(stop_words) %>%
+  count(doc,word, name = "freq", sort = TRUE)
+
+dtm <- freq %>% cast_dtm(document = doc, term = word, value = freq)
+
+ldas <- list()
+j <- 0
+for (i in 2:10) {
+  j <- j+1
+  print(i)
+  ldas[[j]] <- LDA(x = dtm, k = i, control = list(seed = 1234))
+}
+
+(AICs <- data.frame(k = 2:10, aic = map_dbl(ldas, AIC)))
+
+(K <- AICs$k[which.min(AICs$aic)])
+
+topicmodel <- LDA(x = dtm, k = K, control = list(seed = 1234))
+
+#The model is created, let's now take a closer look at the different topics
+#and their "content"
+
+(topic_term <- tidy(topicmodel, matrix = 'beta'))
+#first terms don't seem to belong to any topic, which makes sense given that 
+#it aren't real words. 
+
+#let's get the top 20 terms per topic to get a better understanding of the topics
+top_terms <- topic_term %>% group_by(topic) %>% top_n(20, beta) %>% ungroup() %>%
+  arrange(topic, desc(beta))
+top_terms[1:20,] #Topic 1
+top_terms[21:40,] #Topic 2
+top_terms[41:60,] #Topic 3
+top_terms[61:80,] #Topic 4
+top_terms[81:100,] #Topic 5
+
+#each topic seems to have bitcoin at the top -> this makes sense as all the tweets
+#we are analysing should be about bitcoin.
+
+#Let's plot them to get a cleaner overview
+top_terms %>%
+  mutate(term = reorder(term, beta)) %>%
+  ggplot(aes(term, beta, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  coord_flip()
+
+topic_term %>% 
+  group_by(topic) %>% 
+  top_n(50, beta) %>% 
+  pivot_wider(term, topic, values_from = "beta", names_prefix = 'topic', values_fill = 0) %>% 
+  column_to_rownames("term") %>%  
+  comparison.cloud(colors = brewer.pal(3, "Set2")) 
