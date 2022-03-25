@@ -123,12 +123,60 @@ model_skipgram1 <- word2vec(skipgram_text, type = "skip-gram", dim = 15, iter = 
 
 #We start with looking to the words close to bitcoin and btc, which are our target words
 predict(model_skipgram1, newdata = c("bitcoin", "btc"), type = "nearest", top_n = 5)
+#btc is close to numbers? For bitcoin we more terms containing the word crypto, but not
+#necessarily words attracting our attention
 
 model_skipgram2 <- word2vec(skipgram_text, type = "skip-gram", dim = 100, iter = 50, window = 5)
 predict(model_skipgram2, newdata = c("bitcoin", "btc"), type = "nearest", top_n = 5)
+#bitcoin and btc are now closest to each other, as a result of increasing the dimension 
+#of the vector. Another word that gets my attention is the word "antifud", let's see
+#what that is close to.
+predict(model_skipgram2, newdata = c("antifud"), type = "nearest", top_n = 5)
+predict(model_skipgram2, newdata = c("fightfomo"), type = "nearest", top_n = 5)
+predict(model_skipgram2, newdata = c("bitcoinislove"), type = "nearest", top_n = 5)
 
 model_skipgram3 <- word2vec(skipgram_text, type = "skip-gram", dim = 15, iter = 50, window = 3)
 predict(model_skipgram3, newdata = c("bitcoin", "btc"), type = "nearest", top_n = 5)
+predict(model_skipgram3, newdata = c("digitalassets"), type = "nearest", top_n = 5)
+predict(model_skipgram3, newdata = c("carbonaraindex"), type = "nearest", top_n = 5)
+
 
 model_skipgram4 <- word2vec(skipgram_text, type = "skip-gram", dim = 100, iter = 50, window = 3)
 predict(model_skipgram4, newdata = c("bitcoin", "btc"), type = "nearest", top_n = 5)
+
+
+## cbow
+cbow_text <- Bitcoin %>% pull(text) %>% str_to_lower()
+model_cbow1 <- word2vec(cbow_text, type = "cbow", dim = 15, iter = 50, window = 5)
+predict(model_cbow1, newdata = c("btc", "bitcoin"), type = "nearest", top_n = 5)
+#cbow seems to make different associations and I would say more interesting on first sight
+predict(model_cbow1, newdata = c("centralized", "centralised", "actively"), 
+        type = "nearest", top_n = 5)
+#centralized -> idiots thinking money should be decentralized :(
+#Word embedding seems to imply that talks about bitcoin and maybe crypto in general 
+#are the it should or can replace the traditional "fiat" money. 
+predict(model_cbow1, newdata = c("physical", "wealthy", "companies", "shitcoins"), 
+        type = "nearest", top_n = 5)
+
+model_cbow2 <- word2vec(cbow_text, type = "cbow", dim = 100, iter = 50, window = 5)
+predict(model_cbow2, newdata = c("bitcoin", "btc"), type = "nearest", top_n = 5)
+#the increase of dimension does not seem to be too usefull
+
+model_cbow3 <- word2vec(cbow_text, type = "cbow", dim = 15, iter = 50, window = 3)
+predict(model_cbow3, newdata = c("btc", "bitcoin"), type = "nearest", top_n = 5)
+predict(model_cbow3, newdata = c("investing", "abuse", "recovers"), type = "nearest", top_n = 5)
+predict(model_cbow3, newdata = c("safest", "scaling", "decentralization", "taxation",
+                                 "plummets", "skyrockets"), top_n = 5)
+predict(model_cbow3, newdata = c("thedipindex", "priceanalysis"), type = "nearest", top_n = 5)
+#dipindex -> https://buythedips.io/
+predict(model_cbow3, newdata = c("bitcoinprice", "bitcoinanalysis"), type = "nearest", top_n = 5)
+predict(model_cbow3, newdata = c("tradingtips"), type = "nearest", top_n = 5)
+predict(model_cbow3, newdata = c("bitcoinnewstoday"), type = "nearest", top_n = 10)
+#-> still some spam present in dataset ? 
+
+model_cbow4 <- word2vec(cbow_text, type = "cbow", dim = 15, iter = 50, window = 8)
+predict(model_cbow4, newdata = c("bitcoin", "btc"), type = "nearest", top_n = 5)
+predict(model_cbow4, newdata = c("bitstream", "taxed", "thailand"), type = "nearest", top_n = 5)
+predict(model_cbow4, newdata = c("pumping", "altseason"), type = "nearest", top_n = 5)
+predict(model_cbow4, newdata = c("plummets"), type = "nearest", top_n = 5)
+predict(model_cbow4, newdata = c("outperforms"), type = "nearest", top_n = 5)
