@@ -36,4 +36,4 @@ library(textdata)
 library(quantmod)
 library(purrr)
 library(twitteR)
-
+library(tictoc)

@@ -270,9 +270,101 @@ getQuantile <- function(df_variable){
 }
 
 df_score_lexicon$followers_count_quantile <- getQuantile(df_score_lexicon$followers_count)
-df_score_lexicon %>% group_by(followers_count_quantile) %>% summarise(sentiment = mean(sentiment_score))
+df_score_lexicon_followers_w <- df_score_lexicon %>% group_by(created_at, followers_count_quantile) %>% summarise(sentiment = mean(sentiment_score))
+df_score_lexicon_followers_w$weight_score <- df_score_lexicon_followers_w$followers_count_quantile*df_score_lexicon_followers_w$sentiment
+df_score_lexicon_followers_w$weight_score <- df_score_lexicon_followers_w$weight_score/sum(seq(1:10))
+score_daily_followers_w <- df_score_lexicon_followers_w %>% group_by(created_at) %>%
+  summarise(sentiment_score = sum(weight_score))
+
+#let's now check the difference with the initial sentiment score without weighing the sentiment
+ggplot(score_daily, aes(x = created_at, y = sentiment))+
+  geom_line(col = "dark red")+
+  geom_line(data = score_daily_followers_w, aes(x = created_at, y = sentiment_score), col = "dark green")+
+  geom_line(data = bitcoin_price_df, aes(x = Date, y = rel_close_1daylag), col = "purple")+
+  xlab("Date")+
+  ylab("Sentiment Score/price movement")
+  
 #we notice the sentiment to be higher for the tweets from accounts who's 
 #number of followers are in the lower quantiles.
+
+#a next option we look at, as the resulting sentiment if we were to remove the 
+#neutral sentiments from the dataset, assuming that neutral sentiments don't realy 
+#affect public opinion. 
+
+#how many tweets have a neutral score?
+length(df_score_lexicon$sentiment_score[which(df_score_lexicon$sentiment_score == 0)])/
+  length(df_score_lexicon$sentiment_score) * 100
+#around 45% of the tweets have a neutral opinion and all those zero's have a big impact 
+#on the average that is calculated
+
+df_score_no_neutral <- df_score_lexicon %>% filter(sentiment_score != 0)
+df_score_no_neutral_daily <- df_score_no_neutral %>% group_by(created_at) %>%
+  summarise(sentiment_score = mean(sentiment_score))
+
+ggplot(score_daily, aes(x = created_at, y = sentiment))+
+  geom_line(col = "dark red")+
+  geom_line(data = df_score_no_neutral_daily, aes(x = created_at, y = sentiment_score), col = "dark green")+
+  geom_line(data = bitcoin_price_df, aes(x = Date, y = rel_close_1daylag), col = "purple")+
+  xlab("Date")+
+  ylab("Sentiment Score/price movement")
+
+#overal sentiment becomes much more positive. We do notice the shape of the graph
+#doesn't changes, only the location. 
+
+#An other option we could consider is the favorites a tweet has gotten, only we should
+#be carefull with this as some tweets were posted earlier on the day. 
+summary(Bitcoin$favorite_count)
+quantile(Bitcoin$favorite_count, c(0.7, 0.8, 0.9, 0.95, 0.99))
+
+#for the aggregate sentiment of a day we could also assume that the sentiment of the 
+#day before will still play it's part. Lets start by going only one day back and give
+#the days a weight of 0.7 for today and 0.3 for today - 1
+tic()
+one_day_back_w <- numeric(length(score_daily$sentiment))
+for(i in 1:length(score_daily$sentiment)){
+  if(i == 1){
+    one_day_back_w[i] = score_daily$sentiment[i]
+  }
+  else{
+    one_day_back_w[i] = score_daily$sentiment[i]*0.7 + score_daily$sentiment[i-1]*0.3
+  }
+}
+toc()
+score_daily$sentiment_tminus1day_7_3 <- one_day_back_w
+
+ggplot(score_daily, aes(x = created_at, y = sentiment))+
+  geom_line(col = "dark red")+
+  geom_line(aes(y = sentiment_tminus1day_7_3), col = "dark green")+
+  xlab("Date")+
+  ylab("Sentiment Score")
+
+tic()
+two_day_back_w <- numeric(length(score_daily$sentiment))
+for(i in 1:length(score_daily$sentiment)){
+  if(i == 1){
+    two_day_back_w[i] = score_daily$sentiment[i]
+  }
+  else if(i == 2){
+    two_day_back_w[i] = score_daily$sentiment[i]*0.7 + score_daily$sentiment[i-1]*0.3
+  }
+  else{
+    two_day_back_w[i] = score_daily$sentiment[i]*0.7 + score_daily$sentiment[i-1]*0.2 +
+      score_daily$sentiment[i - 2]*0.1
+  }
+}
+toc()
+
+score_daily$sentiment_tminus2days_7_2_1 <- two_day_back_w
+
+ggplot(score_daily, aes(x = created_at, y = sentiment))+
+  geom_line(col = "dark red")+
+  #geom_line(aes(y = sentiment_tminus1day_7_3), col = "dark green")+
+  geom_line(aes(y = sentiment_tminus2days_7_2_1), col = "purple")+
+  xlab("Date")+
+  ylab("Sentiment Score")
+#we notice that it smoothens the curve 
+#let go back 2 days in time and give a 70%-20%-10% weight
+
 
 ################################################################################
 ## SENTIMENTR
@@ -304,13 +396,7 @@ ggplot(df_score_sentimentr_dirt_daily, aes(x = date))+
   geom_line(aes(y = sentiment1, colour = "sentiment1"), col = "dark red", show.legend = T)+
   geom_line(aes(y = sentiment2, colour = "sentiment2"), col = "dark green", show.legend = T)+
   geom_line(aes(y = sentiment3, colour = "sentiment3"), col = "dark blue", show.legend = T)+
-  geom_line(data = score_daily, aes(x = created_at,y = sentiment)) +
   labs(x = "Date", y = "Sentiment Score", colour = "legend")
-
-#we notice the big difference between the (current) results form the sentimentR package
-#and the sentiment from the lexicon approach derived in the previous part of the file.
-#the possible explanation is that sentimentR package does not recognizes a lot of the
-#crypto sentiment words. 
 
 #let's now check the results of the sentimentR package if we clean the text before
 #we run the sentiment 
@@ -374,6 +460,11 @@ ggplot(df_score_sentimentr_dirt_daily, aes(x = date, y = sentiment3))+
   xlab("Date")+
   ylab("Sentiment Score")
 
+#Let's now check it's relation with the price movements of bitcoin
+ggplot(df_score_sentimentR_daily, aes(x = date, y = sentiment_score_1))+
+  geom_line(col = "dark red")+
+  geom_line(data = bitcoin_price_df, aes(x = Date, y = rel_close_1daylag), col = "dark green")+
+  ggtitle("Movement of sentiment compared to price")
 #we notice that the text clean made the sentiment much more negative, less take a look
 #at the tweets and see what made them negative
 
@@ -384,3 +475,24 @@ sentimentr_dirt %>% highlight()
 #some make sense, some don't. It seems like both with text cleaned and text not cleaned
 #sentimentR is able to identify some of the positive and negative tweets, however in general
 #I feel like there is a lot of improvement possible. 
+
+#comparing the results from the sentimentR package with the lexicon approach is a bit 
+#difficult because the are on a different scale. This is not the case however for the 
+#Vader package, which is also on a -1 <-> 1 scale. Thus we now check the resulting
+#sentiment from the Vader package as a conclusion for this file. 
+
+vader_text <- Bitcoin %>% pull(text)
+
+vader_dirt <- vader_text %>% vader_df()
+vader_dirt$compound
+
+vader_text <- vader_text %>% replace_emoji() %>% replace_emoticon() %>% 
+  replace_contraction() %>% replace_internet_slang() %>% replace_kern() %>% replace_word_elongation()
+
+vader_text <- cleanText(vader_text)
+
+vader_clean <- vader_text[1:200] %>% vader_df()
+
+vader_clean$compound
+
+#run the vader package takes to much time! 
