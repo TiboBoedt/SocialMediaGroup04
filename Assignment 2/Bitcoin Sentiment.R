@@ -6,7 +6,9 @@ head(Bitcoin, 10) #file die uiteindelijk geschreven wordt hier nog schrijven
 ### UNSUPERVISED METHOD
 ################################################################################
 
+################################################################################
 ## LEXICON APPROACH
+################################################################################
 #Let's start by using the lexicon approach. In the first step we look for different
 #dictionaries available and make some changes to them if necessary. 
 #dictionary 1: dictionary provided in the lecture
@@ -134,14 +136,13 @@ head(bing, 10)
 #Run through the lexicon
 #we use a small subset to test the process as the whole file would take to much 
 #time during the testing phase.
-#subset <- Bitcoin[sample(nrow(Bitcoin), 50000),]
-subset <- Bitcoin
-Encoding(subset$text) <- "latin1"
-subset$text <- iconv(subset$text,'latin1', 'ascii', sub = '')
+Bitcoin
+Encoding(Bitcoin$text) <- "latin1"
+Bitcoin$text <- iconv(Bitcoin$text,'latin1', 'ascii', sub = '')
 
-subset_score <- numeric(nrow(subset))
-for(i in 1:length(subset_score)){
-  text <- subset$text[i] %>% str_to_lower() %>% str_replace_all("[[:punct:]]", "") %>%
+score_lexicon <- numeric(nrow(Bitcoin))
+for(i in 1:length(score_lexicon)){
+  text <- Bitcoin$text[i] %>% str_to_lower() %>% str_replace_all("[[:punct:]]", "") %>%
     str_replace_all("\n", " ") %>% str_replace_all("[[:digit:]]", "")
   
   text_unigram <- str_split(text, " ")[[1]]
@@ -157,23 +158,23 @@ for(i in 1:length(subset_score)){
   
   present_score <- bing$sentiment_score[m[p]]
   
-  subset_score[i] = sum(present_score, na.rm = T)/sum(p)
+  score_lexicon[i] = sum(present_score, na.rm = T)/sum(p)
   
   #add amplifiers correction: whale, !, ?
   #as tweets about whales have a big impact on the creditability we amplify their
   #sentiment
-  if(str_count(subset$text[i], "whale") > 0){
-    subset_score[i] = subset_score[i] * 1.5
+  if(str_count(Bitcoin$text[i], "whale") > 0){
+    score_lexicon[i] = score_lexicon[i] * 1.5
   }
-  if(str_count(subset$text[i], "!") > 0){
-    subset_score[i] = subset_score[i] * 1.5
+  if(str_count(Bitcoin$text[i], "!") > 0){
+    score_lexicon[i] = score_lexicon[i] * 1.5
   }
   
-  if (is.na(subset_score[i])) subset_score[i] <- 0 else subset_score[i] <- subset_score[i]
+  if (is.na(score_lexicon[i])) score_lexicon[i] <- 0 else score_lexicon[i] <- score_lexicon[i]
 }
 
-df_score <- data.frame(subset, sentiment_score = subset_score)
-score_daily <- group_by(df_score, created_at) %>% summarise(sentiment = mean(sentiment_score))
+df_score_lexicon <- data.frame(Bitcoin, sentiment_score = score_lexicon)
+score_daily <- group_by(df_score_lexicon, created_at) %>% summarise(sentiment = mean(sentiment_score))
 
 ggplot(score_daily, aes(x = created_at, y = sentiment))+
   geom_line(col = "dark red") +
@@ -195,7 +196,7 @@ names(bitcoin_price_df)[1] <- "Date"
 bitcoin_price_df$Date <- as_date(bitcoin_price_df$Date)
 #filter on only the dates availables in our data
 bitcoin_price_df <- bitcoin_price_df %>% filter(bitcoin_price_df$Date %in%
-                                                  c(unique(subset$created_at)[1] - 1, unique(subset$created_at)))
+                                                  c(unique(Bitcoin$created_at)[1] - 1, unique(Bitcoin$created_at)))
 head(bitcoin_price_df, 10)
 
 #data is subseted to correct dates. Next we check de increase of bitcoin between closing prices
@@ -210,10 +211,176 @@ bitcoin_price_df$rel_close_1daylag <- c(NA, rel_close[1:length(rel_close)-1])
 
 ggplot(score_daily, aes(x = created_at, y = sentiment))+
   geom_line(col = "dark red") +
-  #geom_line(data = bitcoin_price_df, aes(x = Date, y = rel_close * 10))+
+  #geom_line(data = bitcoin_price_df, aes(x = Date, y = rel_close))+
   geom_line(data = bitcoin_price_df, aes(x = Date, y = rel_close_1daylag), col = "dark green")+
   geom_hline(yintercept = 0, col = "blue")+
   ylim(-0.15,0.3)+
   xlab("Dates")+
   ylab("Sentiment Score")+
   ggtitle("Sentiment Score on a daily base")
+
+#we now experiment with different weighing techniques for the sentiment in aggregating 
+#the sentiment on a daily base. This because now we assumed each tweet to have the same
+#impact on the overal sentiment of the day, where as it makes sense that some tweets
+#will have a bigger impact on the sentiment as they reach more people. 
+
+#a first logical why to weight the sentiment is based on the followers of the creator
+#of the tweet
+summary(df_score_lexicon$followers_count)
+ggplot(df_score_lexicon, aes(x = followers_count))+
+  geom_bar()+
+  xlim(0,2000)
+
+getQuantile <- function(df_variable){
+  output <- numeric(length(df_variable))
+  q <- quantile(df_variable, probs = c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9), na.rm = T) %>% reduce(c)
+  for(i in 1:length(df_variable)){
+    if(df_variable[i] < q[1]){
+      output[i] = 1
+    }
+    else if(df_variable[i] >= q[1] & df_variable[i] < q[2]){
+      output[i] = 2
+    }
+    else if(df_variable[i] >= q[2] & df_variable[i] < q[3]){
+      output[i] = 3
+    }
+    else if(df_variable[i] >= q[3] & df_variable[i] < q[4]){
+      output[i] = 4
+    }
+    else if(df_variable[i] >= q[4] & df_variable[i] < q[5]){
+      output[i] = 5
+    }
+    else if(df_variable[i] >= q[5] & df_variable[i] < q[6]){
+      output[i] = 6
+    }
+    else if(df_variable[i] >= q[6] & df_variable[i] < q[7]){
+      output[i] = 7
+    }
+    else if(df_variable[i] >= q[7] & df_variable[i] < q[8]){
+      output[i] = 8
+    }
+    else if(df_variable[i] >= q[8] & df_variable[i] < q[9]){
+      output[i] = 9
+    }
+    else if(df_variable[i] >= q[9]){
+      output[i] = 10
+    }
+  }
+  return(output)
+}
+
+df_score_lexicon$followers_count_quantile <- getQuantile(df_score_lexicon$followers_count)
+df_score_lexicon %>% group_by(followers_count_quantile) %>% summarise(sentiment = mean(sentiment_score))
+#we notice the sentiment to be higher for the tweets from accounts who's 
+#number of followers are in the lower quantiles.
+
+################################################################################
+## SENTIMENTR
+################################################################################
+
+sentimentR_text <- Bitcoin %>% pull(text)
+
+#let's check sentiment without any pre-processing of the text nor using different type
+#of weights 
+sentimentr_dirt <- sentimentR_text %>% get_sentences() %>% sentiment_by()
+#By default, the sentiment_by function downweights the zero for averaging. 
+#The reason is that you don’t want the neutral sentences to have a strong influence.
+#We check the impact of different averaging techniques
+sentimentr_dirt_average_weighted_mixed_sentiment <- sentimentR_text %>% get_sentences()%>%
+  sentiment_by(averaging.function = average_weighted_mixed_sentiment)
+
+sentimentr_dirt_average_mean <- sentimentR_text %>% get_sentences() %>% 
+  sentiment_by(averaging.function = average_mean)
+
+df_score_sentimentr_dirt <- data.frame(date = Bitcoin$created_at, sentimentr_dirt = sentimentr_dirt$ave_sentiment,
+                                  sentimentr_dirt_average_mean = sentimentr_dirt_average_mean$ave_sentiment, 
+                                  sentimentr_dirt_average_weighted_mixed_sentiment = sentimentr_dirt_average_weighted_mixed_sentiment$ave_sentiment)
+
+df_score_sentimentr_dirt_daily <- df_score_sentimentr_dirt %>% group_by(date) %>%
+  summarise(sentiment1 = mean(sentimentr_dirt), sentiment2 = mean(sentimentr_dirt_average_mean),
+            sentiment3 = mean(sentimentr_dirt_average_weighted_mixed_sentiment))
+
+ggplot(df_score_sentimentr_dirt_daily, aes(x = date))+
+  geom_line(aes(y = sentiment1, colour = "sentiment1"), col = "dark red", show.legend = T)+
+  geom_line(aes(y = sentiment2, colour = "sentiment2"), col = "dark green", show.legend = T)+
+  geom_line(aes(y = sentiment3, colour = "sentiment3"), col = "dark blue", show.legend = T)+
+  geom_line(data = score_daily, aes(x = created_at,y = sentiment)) +
+  labs(x = "Date", y = "Sentiment Score", colour = "legend")
+
+#we notice the big difference between the (current) results form the sentimentR package
+#and the sentiment from the lexicon approach derived in the previous part of the file.
+#the possible explanation is that sentimentR package does not recognizes a lot of the
+#crypto sentiment words. 
+
+#let's now check the results of the sentimentR package if we clean the text before
+#we run the sentiment 
+
+sentimentR_text <- iconv(sentimentR_text, from = "latin1", to = "ascii", sub = "byte")
+
+sentimentR_text <- sentimentR_text %>%   replace_emoji() %>% replace_emoticon() %>% 
+  replace_contraction() %>% replace_internet_slang() %>% replace_kern() %>% replace_word_elongation()
+
+cleanText <- function(text) {
+  clean_texts <- text %>%
+    str_replace_all("<.*>", "") %>%                         # remove remainig emojis
+    str_replace_all("&amp;", "") %>%                        # remove &
+    str_replace_all("(RT|via)((?:\\b\\W*@\\w+)+)", "") %>%  # remove retweet entities
+    str_replace_all("@\\w+", "") %>%                        # remove @ people, replace_tag() also works
+    str_replace_all('#', "") %>%                            #remove only hashtag, replace_hash also works
+    str_replace_all("[[:punct:]]", "") %>%                  # remove punctuation
+    str_replace_all("[[:digit:]]", "") %>%                  # remove digits
+    str_replace_all("http\\w+", "") %>%                     # remove html links replace_html() also works
+    str_replace_all("[ \t]{2,}", " ") %>%                   # remove unnecessary spaces
+    str_replace_all("^\\s+|\\s+$", "") %>%                  # remove unnecessary spaces
+    str_trim() %>% 
+    str_to_lower()
+  return(clean_texts)
+}
+sentimentR_text <- cleanText(sentimentR_text)
+
+lemma_dictionary_hs <- make_lemma_dictionary(sentimentR_text, engine = 'hunspell')
+sentimentR_text <- lemmatize_strings(sentimentR_text, dictionary = lemma_dictionary_hs)
+
+sentiment_clean_1 <- sentimentR_text %>% get_sentences() %>% sentiment_by()
+
+sentiment_clean_2 <- sentimentR_text %>% get_sentences() %>% sentiment_by(averaging.function = average_weighted_mixed_sentiment)
+
+sentiment_clean_3 <- sentimentR_text %>% get_sentences() %>% sentiment_by(averaging.function = average_mean)
+
+df_score_sentimentR <- data.frame(date = Bitcoin$created_at, sentiment_score_1 = 
+                                    sentiment_clean_1$ave_sentiment, sentiment_score_2 = 
+                                    sentiment_clean_2$ave_sentiment, sentiment_score_3 =
+                                    sentiment_clean_3$ave_sentiment)
+
+df_score_sentimentR_daily <- df_score_sentimentR %>% group_by(date) %>%
+  summarise(sentiment_score_1 = mean(sentiment_score_1), sentiment_score_2 = mean(sentiment_score_2),
+            sentiment_score_3 = mean(sentiment_score_3)) 
+
+ggplot(df_score_sentimentr_dirt_daily, aes(x = date, y = sentiment1))+
+  geom_line(col = "dark green")+
+  geom_line(data = df_score_sentimentR_daily, aes(x = date, y = sentiment_score_1), col = "dark red")+
+  xlab("Date")+
+  ylab("Sentiment Score")
+
+ggplot(df_score_sentimentr_dirt_daily, aes(x = date, y = sentiment2))+
+  geom_line(col = "dark green")+
+  geom_line(data = df_score_sentimentR_daily, aes(x = date, y = sentiment_score_2), col = "dark red")+
+  xlab("Date")+
+  ylab("Sentiment Score")
+
+ggplot(df_score_sentimentr_dirt_daily, aes(x = date, y = sentiment3))+
+  geom_line(col = "dark green")+
+  geom_line(data = df_score_sentimentR_daily, aes(x = date, y = sentiment_score_3), col = "dark red")+
+  xlab("Date")+
+  ylab("Sentiment Score")
+
+#we notice that the text clean made the sentiment much more negative, less take a look
+#at the tweets and see what made them negative
+
+sentiment_clean_1 %>% highlight()
+#reading tweets from the highligth show that the more negative sentiment seems to make
+#sense. Let's look at the same tweets without the text cleaning
+sentimentr_dirt %>% highlight()
+#some make sense, some don't. It seems like both with text cleaned and text not cleaned
+#sentimentR is able to identify some of the positive and negative tweets, however in general
+#I feel like there is a lot of improvement possible. 
