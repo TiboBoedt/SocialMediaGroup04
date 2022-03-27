@@ -17,7 +17,7 @@ library(lubridate)
 coins <- crypto_list(only_active = T)
 
 #Select desired coins
-coins = coins %>% filter((symbol == "BTC") | (symbol == "ETH") | (symbol == "SAND") | (symbol == "SHIB") | (symbol == "ADA") | (symbol == "DOGE"))
+coins = coins %>% filter((symbol == "BTC"))
 coins
 
 # Get first time we scraped a tweet
@@ -35,9 +35,19 @@ lastdate = Bitcoin$created_at[1]
 
 # Get prices of crypto's starting from certain date.
 
-history = crypto_history(coins, start_date="20220311", end_date="20220321")
-history
+history = crypto_history(coins, start_date="20220310", end_date="20220327")
 
-# Export result
-#write.table(history , file = "your_path\\df.csv")
+# Get close of previous day
+Close_Previous_Day = history$close
+Close_Previous_Day = c(0,Close_Previous_Day)
+Close_Previous_Day = Close_Previous_Day[1:17] #Delete last element in array
+history$Close_Previous_Day = Close_Previous_Day
+
+history$Up_Down = ifelse(history$close > history$Close_Previous_Day , 1, 0)
+
+#remove first day 
+history <- history %>% slice(-c(1))
+
+#Export result
+write.csv(history , file ="Bitcoin_Price_History.csv")
 

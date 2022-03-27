@@ -8,7 +8,7 @@
 if (!require("pacman")) install.packages("pacman") ; require("pacman")
 p_load(SnowballC, slam, tm, RWeka, Matrix)
 
-SentimentReal <- read_csv("/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Tweets_And_Labels_2.csv")
+SentimentReal <- read_csv("Tweets_And_Labels_2.csv")
 Encoding(SentimentReal$text) <- 'latin'
 SentimentReal %>% glimpse()
 
@@ -16,16 +16,20 @@ SentimentReal %>% glimpse()
 ################################################################################
 library(RecordLinkage)
 # Remove dubble tweets in order to avoid data leakage
-
+count = 0
 for (i in 1 : nrow(SentimentReal)){
+  print(i)
   for (j in 1 : nrow(SentimentReal)){
     simularity = levenshteinSim(SentimentReal$text[i],SentimentReal$text[j])
     if(!is.na(simularity)){
       if (simularity >= 0.90){
         SentimentReal <- SentimentReal %>% slice(-c(i))
+        count = count + 1
       }}
   }
 }
+SentimentReal
+
 
 SentimentReal$label <- as.factor(SentimentReal$Sentiment_label)
 library(RecordLinkage)
@@ -97,7 +101,7 @@ sm_test <- dtm.to.sm(dtm_test)
 p_load(irlba)
 
 # Set the k to 20.
-trainer <- irlba(t(sm_train), nu=40, nv=40)
+trainer <- irlba(t(sm_train), nu=20, nv=20)
 str(trainer)
 
 valer <- as.data.frame(as.matrix(sm_val) %*% trainer$u %*% solve(diag(trainer$d)))
@@ -112,12 +116,13 @@ p_load(AUC, caret)
 #trainsform labels into 
 
 y_train <- as.factor(train$label)
-y_val <- as.factor(val$label)
+y_test <- as.factor(test$label)
+
 
 ######################## Logistic Regression  ##################################
 ################################################################################
 
-p_load(nnet)
+p_load(nnnet)
 
 
 multinom_model <- multinom(y_train ~., data = as.data.frame(trainer$v))
@@ -125,13 +130,19 @@ multinom_model
 
 # Building classification table
 
-preds <- predict(multinom_model, newdata = valer, type = "probs")
-preds
+preds <- predict(multinom_model, newdata = test, "class")
+
 
 # AUC
-# Starting validation code
-auc <- multiclass.roc(y_val,preds, levels = c(-2,-1,0, 1,2) )
-auc
+
+AUC::auc(roc(preds,y_test))
+plot(roc(preds,y_test))
+
+#Confusion Matrix 
+preds_lab <- ifelse(preds > 0.5,1,0)
+xtab <- table(preds_lab, y_test)
+confusionMatrix(xtab)
+
 
 ############################# Regularization ###################################
 ################################################################################
@@ -140,10 +151,10 @@ auc
 library(glmnet)
 # Find the best lambda using cross-validation
 set.seed(123) 
-x = as.data.frame(trainer$v)
-y = y_train
+x = trainer$V
+y = train$label
 
-cv.lasso <- cv.glmnet(x, y_train, alpha = 1, family = "multinomial")
+cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "multinomial")
 # Fit the final model on the training data
 model <- glmnet(x, y, alpha = 1, family = "multinomial",
                 lambda = cv.lasso$lambda.min)
@@ -166,7 +177,7 @@ library(caret)
 library(MLeval)
 
 #set up the cross-validation, which we will use to asses the performance
-control <- trainControl(method='repeatedcv', number = 10, repeats = 3,
+control <- trainControl(method='repeatedcv', number = 3, repeats =1 ,
                         savePredictions = T, classProbs = T)
 
 variables_to_use <- colnames(train_data)[!(colnames(train_data) %in% c("spam", "screen_name"))]
@@ -190,15 +201,115 @@ table(preds_value, test_data$spam)
 ############################# XGboost ####################################
 ##########################################################################
 
+
 p_load(xgboost)
+Train_Subset = subset(train,select = -c(label,Sentiment_label,label_binairy))
 
 # "binary:logistic"
-bstSparse <- xgboost(data = train$data, label = train$label, max.depth = 2, eta = 1, nthread = 2, nrounds = 2, objective = "multi:softmax")
+levels(y_train) =c(0, 1, 2,3, 4)
+dtrain <- xgb.DMatrix(data =as.matrix(x), label = as.matrix((y_train)))
+
+bstSparse <- xgboost(data = dtrain, max.depth = 4, eta = 0.1, nthread = 2, nrounds = 50, num_class = 5 ,objective = "multi:softmax")
 
 pred <- predict(bst, test$data)
 
 # save model to binary local file
 xgb.save(bst, "xgboost.model")
+
+##### CV fold ####
+
+numberOfClasses <- 5
+xgb_params <- list("objective" = "multi:softprob",
+                   "eval_metric" = "mlogloss",
+                   "num_class" = numberOfClasses)
+nround    <- 50 # number of XGBoost rounds
+cv.nfold  <- 5
+
+# Fit cv.nfold * cv.nround XGB models and save OOF predictions
+cv_model <- xgb.cv(params = xgb_params,
+                   data = dtrain, 
+                   nrounds = nround,
+                   nfold = cv.nfold,
+                   metrics = list("auc"),
+                   verbose = 2,
+                   prediction = TRUE)
+
+### View importance
+
+importance_matrix <- xgb.importance(model = bst)
+print(importance_matrix)
+
+########################### Grid Search XGboost #######################################
+#######################################################################################
+# set up the cross-validated hyper-parameter search
+xgb_grid_1 = expand.grid(
+  nrounds = 1000,
+  eta = c(0.5,0.2,0.1,0.01),
+  max_depth = c(2,3,4),
+  colsample_bytree = 1,
+  min_child_weight = 1,
+  gamma =1,
+  subsample = c(1)
+)
+
+# pack the training control parameters
+xgb_trcontrol_1 = trainControl(
+  method = "cv",
+  number = 5,
+  verboseIter = TRUE,
+  returnData = FALSE,
+  returnResamp = "all",                                                       
+  classProbs = TRUE,                                                           
+  summaryFunction = multiClassSummary,
+  allowParallel = TRUE,
+)
+
+# train the model for each parameter combination in the grid,
+levels(y_train) =c("VeryNegative", "Negative", "Neutral","Postive" , "VeryPostitive")
+
+library(future)
+future::plan(multisession, workers = 4)
+
+# train the model for each parameter combination in the grid and  evaluate using Cross Validation
+
+xgb_train_2 = train(
+  x = as.matrix(x),
+  y = as.factor(y_train),
+  trControl = xgb_trcontrol_1,
+  tuneGrid = xgb_grid_1,
+  method = "xgbTree"
+)
+
+# scatter plot of the AUC against max_depth and eta
+ggplot(xgb_train_2$results, aes(x = as.factor(eta), y = max_depth, size = ROC, color = ROC)) +
+  geom_point() +
+  theme_bw() +
+  scale_size_continuous(guide = "none")
+
+
+cv_model <- xgb.cv(params = xgb_params,
+                   data = dtrain, 
+                   nrounds = 1000,
+                   eta=0.01,
+                   max_depth=5,
+                   subsample = 0.8,
+                   nfold = cv.nfold,
+                   metrics = list("auc"),
+                   verbose = 2,
+                   prediction = TRUE)
+
+# Change depth of trees (look for 5,6) / Change subsamples
+
+# Change depth of trees (look for 5,6) / Change subsamples
+
+# 0.702352
+#Fitting nrounds = 100, max_depth = 5, eta = 0.1, gamma = 1, colsample_bytree = 1, min_child_weight = 1, subsample = 1 on full training set
+
+#71
+#Fitting nrounds = 100, max_depth = 5, eta = 0.1, gamma = 1, colsample_bytree = 1, min_child_weight = 1, subsample = 0.8 on full training set
+
+#71.18
+#Fitting nrounds = 1000, max_depth = 5, eta = 0.01, gamma = 1, colsample_bytree = 1, min_child_weight = 1, subsample = 0.8 on full training set
 
 ######################@# NEURAL NETWORK (Code professor) ##############################
 #######################################################################################
