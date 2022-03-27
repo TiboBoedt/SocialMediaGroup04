@@ -5,19 +5,22 @@
 # We have 17 days of data
 
 History <- read_csv("Bitcoin_Price_History.csv")
-Sentiment<- read_csv("/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Tweets_And_Labels_2.csv")
 
+Bitcoin <- read_csv("//Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin_And_Labels.csv")
+Bitcoin$Sentiment_Label_Pred
 # Aggregate sentiment over the whole day
 
-dates <- lapply(Sentiment$created_at, function(x) if(is.na(as.numeric(x))) as_date(x) else as_date(as_datetime(as.numeric(x))))
+dates <- lapply(Bitcoin$created_at, function(x) if(is.na(as.numeric(x))) as_date(x) else as_date(as_datetime(as.numeric(x))))
 dates <- dates %>% reduce(c)
-Sentiment$created_at <- dates
+Bitcoin$created_at <- dates
 
-# Aggregrate
-aggregate(Sentiment$label, by=list(Sentiment$created_at), sum)
+#Aggregrate
 
-# Add to dataframe
-Data <- cbind(History,Sentiment$Sentiment_label)
+df = aggregate(Bitcoin$Sentiment_Label_Pred, by=list(Bitcoin$created_at), sum)
+#Filter irrelevant dates
+Aggregated_Sentiment = df[9:19,]$x
+
+History$Aggregated_Sentiment = Aggregated_Sentiment
 
 ############## Subsetting ###########
 # We have 17 days of data, we will use 10 days as training data, 3 days as valdiation and 4 days as test data.
@@ -28,7 +31,6 @@ test <- History[13:17]
 ############ 
 
 model <- keras_model_sequential()
-
 
 model %>%
   layer_embedding(input_dim = 500, output_dim = 32) %>%

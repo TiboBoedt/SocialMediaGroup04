@@ -73,11 +73,11 @@ getLexiconSentiment <- function(df, dict){
     
     text_v <- c(text_unigram, text_bigram)
     
-    m <- match(text_v, bing$word)
+    m <- match(text_v, dict$word)
     
     p <- !is.na(m)
     
-    present_score <- bing$sentiment_score[m[p]]
+    present_score <- dict$sentiment_score[m[p]]
     
     output[i] = sum(present_score, na.rm = T)/sum(p)
     

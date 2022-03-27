@@ -7,10 +7,41 @@
 
 if (!require("pacman")) install.packages("pacman") ; require("pacman")
 p_load(SnowballC, slam, tm, RWeka, Matrix)
+Bing_Dict <- read_csv("./Assignment 2/bing_updated")
 
 SentimentReal <- read_csv("Tweets_And_Labels_2.csv")
 Encoding(SentimentReal$text) <- 'latin'
 SentimentReal %>% glimpse()
+
+
+############################ Variables  ########################################
+################################################################################
+
+SentimentReal$Nr_Exclemationmarks = countPunct(SentimentReal, "!")
+SentimentReal$Nr_QuestionMarks = countPunct(SentimentReal, "?")
+SentimentReal$Nr_OfPoints = countPunct(SentimentReal, ".")
+SentimentReal$Lexicon_Sentiment = getLexiconSentiment(SentimentReal,Bing_Dict)
+
+SentimentReal$Nr_OfPostiveUnigrams = countUnigramsSent(SentimentReal,Bing_Dict ,"positive" )
+SentimentReal$Nr_OfNegativeUnigrams = countUnigramsSent(SentimentReal,Bing_Dict ,"negative" )
+SentimentReal$Nr_Times_Bullish = lookupWordBinary(SentimentReal, "Bullish")
+SentimentReal$Nr_Times_Bearish = lookupWordBinary(SentimentReal, "Bearish")
+SentimentReal$Nr_Times_Moon = lookupWordBinary(SentimentReal, "Moon")
+SentimentReal$Nr_Times_HODL = lookupWordBinary(SentimentReal, "HODL")
+SentimentReal$Nr_Times_Pump = lookupWordBinary(SentimentReal, "Pump")
+SentimentReal$Nr_Times_Dump = lookupWordBinary(SentimentReal, "Dump")
+SentimentReal$Nr_Times_Bear = lookupWordBinary(SentimentReal, "Bear")
+SentimentReal$Nr_Times_Bull = lookupWordBinary(SentimentReal, "Bull")
+SentimentReal$Nr_Times_Buy = lookupWordBinary(SentimentReal, "Buy")
+SentimentReal$Nr_Times_Sell = lookupWordBinary(SentimentReal, "Sell")
+SentimentReal$Nr_Times_Whale = lookupWordBinary(SentimentReal, "Whale")
+SentimentReal$Nr_Times_FOMO = lookupWordBinary(SentimentReal, "FOMO")
+SentimentReal$Nr_Times_ATH = lookupWordBinary(SentimentReal, "ATH")
+SentimentReal$Nr_Times_Short = lookupWordBinary(SentimentReal, "Short")
+SentimentReal$Nr_Times_Long = lookupWordBinary(SentimentReal, "Long")
+SentimentReal$Nr_Times_Defi = lookupWordBinary(SentimentReal, "Defi")
+#SentimentReal$Nr_Times_Mooning = lookupWordBinary(SentimentReal, "Mooning")
+SentimentReal$Nr_Times_Decentralization = lookupWordBinary(SentimentReal, "Decentralization")
 
 ############################ Train and Test split ##############################
 ################################################################################
@@ -28,8 +59,6 @@ for (i in 1 : nrow(SentimentReal)){
       }}
   }
 }
-SentimentReal
-
 
 SentimentReal$label <- as.factor(SentimentReal$Sentiment_label)
 library(RecordLinkage)
@@ -101,7 +130,7 @@ sm_test <- dtm.to.sm(dtm_test)
 p_load(irlba)
 
 # Set the k to 20.
-trainer <- irlba(t(sm_train), nu=20, nv=20)
+trainer <- irlba(t(sm_train), nu=40, nv=40)
 str(trainer)
 
 valer <- as.data.frame(as.matrix(sm_val) %*% trainer$u %*% solve(diag(trainer$d)))
@@ -116,32 +145,49 @@ p_load(AUC, caret)
 #trainsform labels into 
 
 y_train <- as.factor(train$label)
-y_test <- as.factor(test$label)
+y_val <- as.factor(val$label)
 
+
+x = as.data.frame(trainer$v)
+x = cbind(x, train[,103:123])
+
+validation = cbind(valer, val[,103:123])
+
+######################## Logistic Regression Binairy  ##################################
+################################################################################
+
+levels(train$label_binairy) =c("Postive" , "Negative")
+LR <- glm(as.factor(train$label_binairy) ~., data = x,family = "binomial")
+LR
+
+preds <- predict(LR,validation,type = "response")
+preds
+
+AUC::auc(roc(preds,as.factor(val$label_binairy)))
+
+library(pROC)
+roc_qda <- roc(response = as.factor(val$label_binairy), predictor =preds)
+plot(roc_qda, col="red", lwd=3, main="ROC curve QDA")
+auc(roc_qda)
 
 ######################## Logistic Regression  ##################################
 ################################################################################
 
-p_load(nnnet)
+p_load(nnet)
 
-
-multinom_model <- multinom(y_train ~., data = as.data.frame(trainer$v))
+multinom_model <- multinom(y_train ~., data = x)
 multinom_model
 
 # Building classification table
 
-preds <- predict(multinom_model, newdata = test, "class")
-
+preds <- predict(multinom_model, newdata = validation, type = "probs")
+preds
 
 # AUC
-
-AUC::auc(roc(preds,y_test))
-plot(roc(preds,y_test))
-
-#Confusion Matrix 
-preds_lab <- ifelse(preds > 0.5,1,0)
-xtab <- table(preds_lab, y_test)
-confusionMatrix(xtab)
+# Starting validation code
+library(pROC)
+auc <- multiclass.roc(y_val,preds, levels = c(-2,-1,0, 1,2) )
+auc
 
 
 ############################# Regularization ###################################
@@ -151,10 +197,10 @@ confusionMatrix(xtab)
 library(glmnet)
 # Find the best lambda using cross-validation
 set.seed(123) 
-x = trainer$V
-y = train$label
+x = as.data.frame(trainer$v)
+y = y_train
 
-cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "multinomial")
+cv.lasso <- cv.glmnet(x, y_train, alpha = 1, family = "multinomial")
 # Fit the final model on the training data
 model <- glmnet(x, y, alpha = 1, family = "multinomial",
                 lambda = cv.lasso$lambda.min)
@@ -169,6 +215,7 @@ observed.classes <- test.data$diabetes
 mean(predicted.classes == observed.classes)
 
 
+
 ############################# Random Forest ####################################
 ################################################################################
 
@@ -177,15 +224,18 @@ library(caret)
 library(MLeval)
 
 #set up the cross-validation, which we will use to asses the performance
-control <- trainControl(method='repeatedcv', number = 3, repeats =1 ,
-                        savePredictions = T, classProbs = T)
+control <- trainControl(method='repeatedcv', number = 3, repeats = 1,
+                        savePredictions = T, classProbs = T,,verbose =1)
 
-variables_to_use <- colnames(train_data)[!(colnames(train_data) %in% c("spam", "screen_name"))]
-tunegrid <- expand.grid(.mtry = c(1:length(variables_to_use)))
-rf_model <- train(x = train_data[, variables_to_use], y = train_data$spam, data = train_data, method = "rf", 
+
+data_rf = cbind(x,y_train)
+levels(y_train) =c("VeryNegative", "Negative", "Neutral","Postive" , "VeryPostitive")
+tunegrid <- expand.grid(.mtry = c(1:length(train)))
+rf_model <- train(x = x, y = y_train, data = data_rf, method = "rf", 
                   trControl = control, preProcess = c("center","scale"),
                   ntree = 500, tuneGrid = tunegrid, metric = 'Accuracy')
 
+# Fitting mtry = 96 on full training set
 rf_model
 varImp(rf_model)
 
@@ -203,13 +253,13 @@ table(preds_value, test_data$spam)
 
 
 p_load(xgboost)
-Train_Subset = subset(train,select = -c(label,Sentiment_label,label_binairy))
+
 
 # "binary:logistic"
 levels(y_train) =c(0, 1, 2,3, 4)
 dtrain <- xgb.DMatrix(data =as.matrix(x), label = as.matrix((y_train)))
 
-bstSparse <- xgboost(data = dtrain, max.depth = 4, eta = 0.1, nthread = 2, nrounds = 50, num_class = 5 ,objective = "multi:softmax")
+bstSparse <- xgboost(data = dtrain, max.depth = 5, eta = 0.01, nthread = 4, nrounds = 1000, num_class = 5 ,subsample = 0.8,objective = "multi:softmax")
 
 pred <- predict(bst, test$data)
 
