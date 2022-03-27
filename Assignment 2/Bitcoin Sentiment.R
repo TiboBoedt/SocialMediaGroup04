@@ -137,6 +137,8 @@ bing <- rbind(bing, bing_dont, bing_not)
 bing$sentiment_score <- ifelse(bing$sentiment == "positive", 1, -1)
 table(bing$sentiment_score)
 head(bing, 10)
+
+#write_csv(bing, "bing_updated")
 #Run through the lexicon
 #we use a small subset to test the process as the whole file would take to much 
 #time during the testing phase.
