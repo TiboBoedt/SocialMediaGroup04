@@ -86,3 +86,7 @@ lookupWordBinary <- function(df, word){
 tic()
 lookupWordBinary(Bitcoin, "bullish")
 toc()
+
+library(RecordLinkage)
+levenshteinSim("test", Bitcoin$text)
+
