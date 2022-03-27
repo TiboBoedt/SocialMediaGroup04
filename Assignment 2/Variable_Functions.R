@@ -1,4 +1,4 @@
-test <- read_csv("bing_updated")
+bing <- read_csv("bing_updated")
 
 countUnigramsSent <- function(df, dict, sentiment){
   dict <- dict %>% filter(sentiment == sentiment)
@@ -60,9 +60,6 @@ lookupWordBinary <- function(df, word){
   }
   return(output)
 }
-
-library(RecordLinkage)
-levenshteinSim("test", Bitcoin$text)
 
 getLexiconSentiment <- function(df, dict){
   text <- df %>% pull(text) %>% str_to_lower() %>% str_replace_all("[[:punct:]]", "") %>%
