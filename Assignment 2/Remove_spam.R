@@ -114,3 +114,4 @@ levels(df_label) <- c("quality", "spam")
 tweet_df$label <- df_label
 
 correct_tweet_df <- tweet_df %>% filter(tweet_df$label == "quality")
+
