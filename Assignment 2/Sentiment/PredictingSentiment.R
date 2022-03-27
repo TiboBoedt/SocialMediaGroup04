@@ -144,7 +144,7 @@ pred <- predict(bstSparse, as.matrix(test_combined))
 
 #Rescale predictions
 #There is now data leakage if there are observations who are also in the bitcoin data set...
-preds_rescaled = pred -4
+preds_rescaled = pred -2
 Bitcoin$Sentiment_Label_Pred = preds_rescaled
 
 write_csv(Bitcoin, file = "/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin_And_Labels.csv")
