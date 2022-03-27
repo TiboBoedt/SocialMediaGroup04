@@ -323,6 +323,8 @@ ggplot(score_daily, aes(x = created_at, y = sentiment))+
 summary(Bitcoin$favorite_count)
 quantile(Bitcoin$favorite_count, c(0.7, 0.8, 0.9, 0.95, 0.99))
 
+summary(Bitcoin$verified)
+
 #for the aggregate sentiment of a day we could also assume that the sentiment of the 
 #day before will still play it's part. Lets start by going only one day back and give
 #the days a weight of 0.7 for today and 0.3 for today - 1
