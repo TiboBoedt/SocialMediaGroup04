@@ -17,7 +17,7 @@ countUnigramsSent <- function(df, dict, sentiment){
 }
 
 tic()
-#countUnigramsSent(Bitcoin, bing, "negative")
+countUnigramsSent(Bitcoin, bing, "negative")
 toc()
 
 countBigramsSent <- function(df, dict, sentiment){

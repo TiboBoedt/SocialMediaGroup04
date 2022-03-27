@@ -106,13 +106,14 @@ bing <- rbind(bing, data.frame(word = c("decentralized", "decentralised",
 bing[which(bing$word == "dump"),]
 bing[which(bing$word == "pump"),]
 bing <- rbind(bing, data.frame(word = "pump", sentiment = "positive"))
+bing <- rbind(bing, data.frame(word = "dump", sentiment = "negative"))
 bing[which(bing$word == "shorting"),] #add
 bing[which(bing$word == "short"),] #add
 bing[which(bing$word == "hodl"),] #add
 bing[which(bing$word == "memecoin"),] #add
 bing[which(bing$word == "meme"),] #add
 bing <- rbind(bing, data.frame(word = c("shorting", "short", "hodl", "memecoin", "meme"),
-                               sentiment = c("negative", "negative", "postive", "negative", "negative")))
+                               sentiment = c("negative", "negative", "positive", "negative", "negative")))
 bing[which(bing$word == "ath"),] #add
 bing <- rbind(bing, data.frame(word = "ath", sentiment = "positive"))
 bing[which(bing$word == "defi"),] #add
