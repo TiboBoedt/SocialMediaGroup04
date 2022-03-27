@@ -16,10 +16,6 @@ countUnigramsSent <- function(df, dict, sentiment){
   return(output)
 }
 
-tic()
-countUnigramsSent(Bitcoin, bing, "negative")
-toc()
-
 countBigramsSent <- function(df, dict, sentiment){
   dict <- dict %>% filter(sentiment == sentiment)
   text <- df %>% pull(text) %>% str_to_lower() %>% str_replace_all("[[:punct:]]", "") %>%
@@ -41,10 +37,6 @@ countBigramsSent <- function(df, dict, sentiment){
   return(output)
 }
 
-tic()
-t <- countBigramsSent(Bitcoin, bing, "positive")
-toc()
-
 countPunct <- function(df, punct){
   if(punct == "?" | punct == "."){
     punct <- paste("\\", punct, sep = "")
@@ -56,20 +48,6 @@ countPunct <- function(df, punct){
   }
   return(output)
 }
-
-tic()
-countPunct(Bitcoin, "!")
-toc()
-
-tic()
-countPunct(Bitcoin, "?")
-toc()
-
-tic()
-countPunct(Bitcoin, ".")
-toc()
-
-Bitcoin$text[1]
 
 lookupWordBinary <- function(df, word){
   word <- word %>% str_to_lower() #zekerheid
@@ -83,10 +61,40 @@ lookupWordBinary <- function(df, word){
   return(output)
 }
 
-tic()
-lookupWordBinary(Bitcoin, "bullish")
-toc()
-
 library(RecordLinkage)
 levenshteinSim("test", Bitcoin$text)
+
+getLexiconSentiment <- function(df, dict){
+  text <- df %>% pull(text) %>% str_to_lower() %>% str_replace_all("[[:punct:]]", "") %>%
+    str_replace_all("[[:digit:]]", "") %>% str_squish()
+  output <- numeric(length(text))
+  for(i in 1:length(text)){
+    text_unigram <- str_split(text[i], " ")[[1]]
+    
+    bigram <- rbind(text_unigram, c(text_unigram[2:length(text_unigram)], " "))
+    text_bigram <- paste(bigram[1,1:ncol(bigram)], bigram[2, 1:ncol(bigram)])
+    
+    text_v <- c(text_unigram, text_bigram)
+    
+    m <- match(text_v, bing$word)
+    
+    p <- !is.na(m)
+    
+    present_score <- bing$sentiment_score[m[p]]
+    
+    output[i] = sum(present_score, na.rm = T)/sum(p)
+    
+    if(str_count(text[i], "whale") > 0){
+      output[i] = output[i] * 1.5
+    }
+    if(str_count(text[i], "!") > 0){
+      output[i] = output[i] * 1.5
+    }
+    
+    if (is.na(output[i])) output[i] <- 0 else output[i] <- output[i]
+    
+  }
+  return(output)
+}
+
 
