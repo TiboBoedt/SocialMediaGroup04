@@ -72,6 +72,7 @@ toc()
 Bitcoin$text[1]
 
 lookupWordBinary <- function(df, word){
+  word <- word %>% str_to_lower() #zekerheid
   text <- df %>% pull(text) %>% str_to_lower %>% str_replace_all("[[:punct:]]", "") %>%
     str_replace_all("[[:digit:]]", "") %>% str_squish()
   output <- numeric(length(text))
