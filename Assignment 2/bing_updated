@@ -6795,10 +6795,15 @@ decentralized,positive,1
 decentralised,positive,1
 centralized,positive,1
 centralised,positive,1
+decentralized,positive,1
+decentralised,positive,1
+centralized,positive,1
+centralised,positive,1
 pump,positive,1
+dump,negative,-1
 shorting,negative,-1
 short,negative,-1
-hodl,postive,-1
+hodl,positive,1
 memecoin,negative,-1
 meme,negative,-1
 ath,positive,1
@@ -13602,10 +13607,15 @@ don't decentralized,negative,-1
 don't decentralised,negative,-1
 don't centralized,negative,-1
 don't centralised,negative,-1
+don't decentralized,negative,-1
+don't decentralised,negative,-1
+don't centralized,negative,-1
+don't centralised,negative,-1
 don't pump,negative,-1
+don't dump,positive,1
 don't shorting,positive,1
 don't short,positive,1
-don't hodl,positive,1
+don't hodl,negative,-1
 don't memecoin,positive,1
 don't meme,positive,1
 don't ath,negative,-1
@@ -20409,10 +20419,15 @@ not decentralized,negative,-1
 not decentralised,negative,-1
 not centralized,negative,-1
 not centralised,negative,-1
+not decentralized,negative,-1
+not decentralised,negative,-1
+not centralized,negative,-1
+not centralised,negative,-1
 not pump,negative,-1
+not dump,positive,1
 not shorting,positive,1
 not short,positive,1
-not hodl,positive,1
+not hodl,negative,-1
 not memecoin,positive,1
 not meme,positive,1
 not ath,negative,-1

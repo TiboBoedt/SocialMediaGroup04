@@ -106,13 +106,14 @@ bing <- rbind(bing, data.frame(word = c("decentralized", "decentralised",
 bing[which(bing$word == "dump"),]
 bing[which(bing$word == "pump"),]
 bing <- rbind(bing, data.frame(word = "pump", sentiment = "positive"))
+bing <- rbind(bing, data.frame(word = "dump", sentiment = "negative"))
 bing[which(bing$word == "shorting"),] #add
 bing[which(bing$word == "short"),] #add
 bing[which(bing$word == "hodl"),] #add
 bing[which(bing$word == "memecoin"),] #add
 bing[which(bing$word == "meme"),] #add
 bing <- rbind(bing, data.frame(word = c("shorting", "short", "hodl", "memecoin", "meme"),
-                               sentiment = c("negative", "negative", "postive", "negative", "negative")))
+                               sentiment = c("negative", "negative", "positive", "negative", "negative")))
 bing[which(bing$word == "ath"),] #add
 bing <- rbind(bing, data.frame(word = "ath", sentiment = "positive"))
 bing[which(bing$word == "defi"),] #add
@@ -321,6 +322,8 @@ ggplot(score_daily, aes(x = created_at, y = sentiment))+
 #be carefull with this as some tweets were posted earlier on the day. 
 summary(Bitcoin$favorite_count)
 quantile(Bitcoin$favorite_count, c(0.7, 0.8, 0.9, 0.95, 0.99))
+
+summary(Bitcoin$verified)
 
 #for the aggregate sentiment of a day we could also assume that the sentiment of the 
 #day before will still play it's part. Lets start by going only one day back and give
