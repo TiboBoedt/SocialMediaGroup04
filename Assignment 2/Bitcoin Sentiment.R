@@ -117,7 +117,8 @@ bing[which(bing$word == "ath"),] #add
 bing <- rbind(bing, data.frame(word = "ath", sentiment = "positive"))
 bing[which(bing$word == "defi"),] #add
 bing <- rbind(bing, data.frame(word = "defi", sentiment = "positive"))
-
+bing[which(bing$word == "moon"),] #add
+bing <- rbind(bing, data.frame(word = "moon", sentiment = "positive"))
 #bi-grams
 #next we add some important bi-grams. This are important combination of two words
 #having a meaning (think about negations for example).
@@ -126,10 +127,13 @@ bing[which(bing$word == "smart contract"),] #add
 bing <- rbind(bing, data.frame(word = c("altcoin season", "smart contract"), 
                                sentiment = rep("positive", 2)))
 #we will use don't as negation, as this will be the most often used word to negate
-bing_neg <- data.frame(word = paste("don't", bing$word, sep = " "), sentiment = 
+bing_dont <- data.frame(word = paste("don't", bing$word, sep = " "), sentiment = 
                          ifelse(bing$sentiment == "positive", "negative", "positive"))
 
-bing <- rbind(bing, bing_neg)
+bing_not <- data.frame(word = paste("not", bing$word, sep = " "), sentiment = 
+                          ifelse(bing$sentiment == "positive", "negative", "positive"))
+
+bing <- rbind(bing, bing_dont, bing_not)
 bing$sentiment_score <- ifelse(bing$sentiment == "positive", 1, -1)
 table(bing$sentiment_score)
 head(bing, 10)
