@@ -3,7 +3,7 @@ test <- read_csv("bing_updated")
 countUnigramsSent <- function(df, dict, sentiment){
   dict <- dict %>% filter(sentiment == sentiment)
   text <- df %>% pull(text) %>% str_to_lower() %>% str_replace_all("[[:punct:]]", "") %>%
-    str_replace_all("[[:digit:]]", "")
+    str_replace_all("[[:digit:]]", "") %>% str_squish()
   output <- numeric(length(text))
   for(i in 1:length(text)){
     unigrams <- str_split(text[i], " ")[[1]]
@@ -23,7 +23,7 @@ toc()
 countBigramsSent <- function(df, dict, sentiment){
   dict <- dict %>% filter(sentiment == sentiment)
   text <- df %>% pull(text) %>% str_to_lower() %>% str_replace_all("[[:punct:]]", "") %>%
-    str_replace_all("[[:digit:]]", "")
+    str_replace_all("[[:digit:]]", "") %>% str_squish()
   output <- numeric(length(text))
   for(i in 1:length(text)){
     unigram <- str_split(text[i], " ")[[1]]
@@ -70,3 +70,18 @@ countPunct(Bitcoin, ".")
 toc()
 
 Bitcoin$text[1]
+
+lookupWordBinary <- function(df, word){
+  text <- df %>% pull(text) %>% str_to_lower %>% str_replace_all("[[:punct:]]", "") %>%
+    str_replace_all("[[:digit:]]", "") %>% str_squish()
+  output <- numeric(length(text))
+  for(i in 1:length(text)){
+    count <- str_count(text[i], word)
+    output[i] <- ifelse(count > 0, 1, 0)
+  }
+  return(output)
+}
+
+tic()
+lookupWordBinary(Bitcoin, "bullish")
+toc()
