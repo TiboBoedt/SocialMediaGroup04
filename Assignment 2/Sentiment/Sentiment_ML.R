@@ -8,20 +8,40 @@
 if (!require("pacman")) install.packages("pacman") ; require("pacman")
 p_load(SnowballC, slam, tm, RWeka, Matrix)
 
-SentimentReal <- read_csv("SentimentReal.csv")
-Encoding(SentimentReal$message) <- 'latin'
+SentimentReal <- read_csv("/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Tweets_And_Labels_2.csv")
+Encoding(SentimentReal$text) <- 'latin'
 SentimentReal %>% glimpse()
 
 ############################ Train and Test split ##############################
 ################################################################################
+library(RecordLinkage)
+# Remove dubble tweets in order to avoid data leakage
 
-# Already done by the boyz
+for (i in 1 : nrow(SentimentReal)){
+  for (j in 1 : nrow(SentimentReal)){
+    simularity = levenshteinSim(SentimentReal$text[i],SentimentReal$text[j])
+    if(!is.na(simularity)){
+      if (simularity >= 0.90){
+        SentimentReal <- SentimentReal %>% slice(-c(i))
+      }}
+  }
+}
+
+SentimentReal$label <- as.factor(SentimentReal$Sentiment_label)
+library(RecordLinkage)
+set.seed(1000) 
+
+ind <- sample(x = nrow(SentimentReal), size = nrow(SentimentReal), replace = FALSE)
+train <- SentimentReal[1:floor(length(ind)*.60),]
+val <- SentimentReal[(floor(length(ind)*.60)+1):floor(length(ind)*.80),]
+test <- SentimentReal[(floor(length(ind)*.80)+1):(length(ind)),]
 
 ############################ DTM Matrix ########################################
 ################################################################################
 
-corpus_train <- Corpus(VectorSource(train$message))
-corpus_test <- Corpus(VectorSource(test$message))
+corpus_train <- Corpus(VectorSource(train$text))
+corpus_val <- Corpus(VectorSource(val$text))
+corpus_test <- Corpus(VectorSource(test$text))
 
 # N-Grams
 
@@ -30,6 +50,12 @@ Tokenizer <- function(x) NGramTokenizer(x, Weka_control(min = mindegree, max = m
 # Dtm
 
 dtm_train <- DocumentTermMatrix(corpus_train, control = list(tokenize = Tokenizer,
+                                                             weighting = function(x) weightTf(x),
+                                                             RemoveNumbers=TRUE,
+                                                             removePunctuation=TRUE,
+                                                             stripWhitespace= TRUE))
+
+dtm_val <- DocumentTermMatrix(corpus_val, control = list(tokenize = Tokenizer,
                                                              weighting = function(x) weightTf(x),
                                                              RemoveNumbers=TRUE,
                                                              removePunctuation=TRUE,
@@ -52,14 +78,16 @@ prepareTest <- function (train, test) {
   testNew<- testNew[,colnames(train)]
 }
 
+dtm_val <- prepareTest(dtm_train, dtm_val)
 dtm_test <- prepareTest(dtm_train, dtm_test)
-dtm_test
+
 
 # Convert to common sparse remix
 
 dtm.to.sm <- function(dtm) {sparseMatrix(i=dtm$i, j=dtm$j, x=dtm$v,dims=c(dtm$nrow, dtm$ncol))}
 
 sm_train <- dtm.to.sm(dtm_train)
+sm_val <- dtm.to.sm(dtm_val)
 sm_test <- dtm.to.sm(dtm_test)
 
 
@@ -69,8 +97,10 @@ sm_test <- dtm.to.sm(dtm_test)
 p_load(irlba)
 
 # Set the k to 20.
-trainer <- irlba(t(sm_train), nu=20, nv=20)
+trainer <- irlba(t(sm_train), nu=40, nv=40)
 str(trainer)
+
+valer <- as.data.frame(as.matrix(sm_val) %*% trainer$u %*% solve(diag(trainer$d)))
 
 tester <- as.data.frame(as.matrix(sm_test) %*% trainer$u %*% solve(diag(trainer$d)))
 head(tester)
@@ -82,13 +112,12 @@ p_load(AUC, caret)
 #trainsform labels into 
 
 y_train <- as.factor(train$label)
-y_test <- as.factor(test$label)
-
+y_val <- as.factor(val$label)
 
 ######################## Logistic Regression  ##################################
 ################################################################################
 
-p_load(nnnet)
+p_load(nnet)
 
 
 multinom_model <- multinom(y_train ~., data = as.data.frame(trainer$v))
@@ -96,19 +125,13 @@ multinom_model
 
 # Building classification table
 
-preds <- predict(multinom_model, newdata = test, "class")
-
+preds <- predict(multinom_model, newdata = valer, type = "probs")
+preds
 
 # AUC
-
-AUC::auc(roc(preds,y_test))
-plot(roc(preds,y_test))
-
-#Confusion Matrix 
-preds_lab <- ifelse(preds > 0.5,1,0)
-xtab <- table(preds_lab, y_test)
-confusionMatrix(xtab)
-
+# Starting validation code
+auc <- multiclass.roc(y_val,preds, levels = c(-2,-1,0, 1,2) )
+auc
 
 ############################# Regularization ###################################
 ################################################################################
@@ -117,10 +140,10 @@ confusionMatrix(xtab)
 library(glmnet)
 # Find the best lambda using cross-validation
 set.seed(123) 
-x = trainer$V
-y = train$label
+x = as.data.frame(trainer$v)
+y = y_train
 
-cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "multinomial")
+cv.lasso <- cv.glmnet(x, y_train, alpha = 1, family = "multinomial")
 # Fit the final model on the training data
 model <- glmnet(x, y, alpha = 1, family = "multinomial",
                 lambda = cv.lasso$lambda.min)
@@ -176,6 +199,16 @@ pred <- predict(bst, test$data)
 
 # save model to binary local file
 xgb.save(bst, "xgboost.model")
+
+######################@# NEURAL NETWORK (Code professor) ##############################
+#######################################################################################
+
+
+
+######################@# BERT  ##############################
+#######################################################################################
+#https://towardsdatascience.com/sentiment-analysis-in-10-minutes-with-bert-and-hugging-face-294e8a04b671
+
 
 
 ############################# NEURAL NETWORK ##########################################
