@@ -282,16 +282,19 @@ getQuantile <- function(df_variable){
 
 df_score_lexicon$followers_count_quantile <- getQuantile(df_score_lexicon$followers_count)
 df_score_lexicon_followers_w <- df_score_lexicon %>% group_by(created_at, followers_count_quantile) %>% summarise(sentiment = mean(sentiment_score))
-df_score_lexicon_followers_w$weight_score <- df_score_lexicon_followers_w$followers_count_quantile*df_score_lexicon_followers_w$sentiment
-df_score_lexicon_followers_w$weight_score <- df_score_lexicon_followers_w$weight_score/sum(seq(1:10))
+#we use the following weights for the highest quantile (10) until the lowest (1) ->
+#c(25%, 18%, 15%, 12%, 10%, 8%, 5%, 4%, 2%, 1%)
+weight <- c(0.01, 0.02, 0.04, 0.05, 0.08, 0.1, 0.12, 0.15, 0.18, 0.25)
+df_score_lexicon_followers_w$weight_sentiment <- df_score_lexicon_followers_w$sentiment *
+  weight[df_score_lexicon_followers_w$followers_count_quantile]
 score_daily_followers_w <- df_score_lexicon_followers_w %>% group_by(created_at) %>%
-  summarise(sentiment_score = sum(weight_score))
+  summarise(sentiment_score = sum(weight_sentiment))
 
 #let's now check the difference with the initial sentiment score without weighing the sentiment
 ggplot(score_daily, aes(x = created_at, y = sentiment))+
-  geom_line(col = "dark red")+
-  geom_line(data = score_daily_followers_w, aes(x = created_at, y = sentiment_score), col = "dark green")+
-  geom_line(data = bitcoin_price_df, aes(x = Date, y = rel_close_1daylag), col = "purple")+
+  geom_line(col = "deepskyblue1")+
+  geom_line(data = score_daily_followers_w, aes(x = created_at, y = sentiment_score), col = "red1")+
+  #geom_line(data = bitcoin_price_df, aes(x = Date, y = rel_close_1daylag), col = "purple")+
   xlab("Date")+
   ylab("Sentiment Score/price movement")
   
@@ -474,14 +477,17 @@ ggplot(df_score_sentimentr_dirt_daily, aes(x = date, y = sentiment3))+
   ylab("Sentiment Score")
 
 #Let's now check it's relation with the price movements of bitcoin
-ggplot(df_score_sentimentR_daily, aes(x = date, y = sentiment_score_1))+
-  geom_line(col = "dark red")+
-  geom_line(data = bitcoin_price_df, aes(x = Date, y = rel_close_1daylag), col = "dark green")+
-  ggtitle("Movement of sentiment compared to price")
+ggplot(df_score_sentimentR_daily, aes(x = date, y = sentiment_score_2))+
+  geom_line(col = "deepskyblue1")+
+  geom_hline(yintercept = 0, col = "blue")+
+  xlab("Date")+
+  ylab("Sentiment")+
+  #geom_line(data = bitcoin_price_df, aes(x = Date, y = rel_close_1daylag), col = "dark green")+
+  ggtitle("Daily sentiment using SentimentR (average = average weighted mixed sentiment)")
 #we notice that the text clean made the sentiment much more negative, less take a look
 #at the tweets and see what made them negative
 
-sentiment_clean_1 %>% highlight()
+sentiment_clean_2 %>% highlight()
 #reading tweets from the highligth show that the more negative sentiment seems to make
 #sense. Let's look at the same tweets without the text cleaning
 sentimentr_dirt %>% highlight()

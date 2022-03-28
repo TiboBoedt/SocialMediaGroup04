@@ -4,8 +4,8 @@
 
 ### FILE
 Bitcoin <- read_twitter_csv("Bitcoin2_no_spam.csv") #put in file
-
-
+Bitcoin$created_at <- as_date(Bitcoin$created_at)
+Bitcoin$account_created_at <- as_date(Bitcoin$account_created_at)
 ### WORDCLOUD & WORDGRAPH 
 ################################################################################
 #first run the files "FunctionsTekstManipulatie.R" and "NLP_functions.R"
@@ -74,7 +74,7 @@ generateWordgraph(Bitcoin, date = unique_dates[9])
 unique_dates[10] #2022-03-19
 remove10 <- c("bitcoin", "btc", "eth", "crypto", "cryptocurrency", "price")
 generateWordcloud(Bitcoin, date = unique_dates[10], cloud1 = F, wordsToRemove = remove10)
-generateWordgraph(Bitcoin, date = unique_dates[10])
+generateWordgraph(Bitcoin[which(Bitcoin$created_at == "2022-03-20"),][1:2500,], date = unique_dates[10])
 
 unique_dates[11] #2022-03-20
 remove11 <- c("bitcoin", "btc", "eth", "crypto", "cryptocurrency", "price")
