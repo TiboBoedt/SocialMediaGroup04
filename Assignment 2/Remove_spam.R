@@ -5,7 +5,7 @@
 model <- readRDS("rf_spam_model.rds") #file is in the assingment2 folder
 
 #Load the file
-#tweet_df <- read.csv("C:\\Users\\Boedt\\OneDrive\\Bureaublad\\Csv_Scrapping\\Bitcoin.csv")
+tweet_df <- read.csv("C:\\Users\\Boedt\\OneDrive\\Bureaublad\\Csv_Scrapping\\Bitcoin.csv")
 tweet_df <- tweet_df %>% distinct(text, .keep_all = TRUE)
 
 #add the necessary variables
@@ -14,13 +14,13 @@ tweet_df <- tweet_df %>% distinct(text, .keep_all = TRUE)
 tweet_df$nr_hashtags <- sapply(tweet_df$hashtags, function(x) if(!is.na(x)) length(str_split(x, " ")[[1]]) else 0)
 
 #age_account_days
-dates <- lapply(tweet_df$created_at, function(x) if(is.na(as.numeric(x))) as_date(x) else as_date(as_datetime(as.numeric(x))))
-dates <- dates %>% reduce(c)
-tweet_df$created_at <- dates
+#dates <- lapply(tweet_df$created_at, function(x) if(is.na(as.numeric(x))) as_date(x) else as_date(as_datetime(as.numeric(x))))
+#dates <- dates %>% reduce(c)
+#tweet_df$created_at <- dates
 
-dates <- lapply(tweet_df$account_created_at, function(x) if(is.na(as.numeric(x))) as_date(x) else as_date(as_datetime(as.numeric(x))))
-dates <- dates %>% reduce(c)
-tweet_df$account_created_at <- dates
+#dates <- lapply(tweet_df$account_created_at, function(x) if(is.na(as.numeric(x))) as_date(x) else as_date(as_datetime(as.numeric(x))))
+#dates <- dates %>% reduce(c)
+#tweet_df$account_created_at <- dates
 
 tweet_df$age_account_days <- as.numeric(tweet_df$created_at - tweet_df$account_created_at)
 
