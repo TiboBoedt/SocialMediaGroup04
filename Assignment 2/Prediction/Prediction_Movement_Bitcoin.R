@@ -108,13 +108,15 @@ p_load(xgboost)
 levels(train_y) =c(0, 1)
 #Create DMatrix
 dtrain <- xgb.DMatrix(data =as.matrix(train_x), label = as.matrix((train_y)))
+
 #Model
 bstSparse <- xgboost(data = dtrain, max.depth = 6, eta = 0.1, nthread = 2, nrounds = 1000 ,subsample = 0.8,objective = "binary:logistic")
 
 xgb_params <- list("objective" = "binary:logistic")
 
 pred <- predict(bstSparse, as.matrix(val_x), type="class")
-preds = ifelse(pred>0.5 , 0 ,1)
+pred
+preds = ifelse(pred > 0.5 , 1 ,0)
 
 table(preds,val_y)
 
@@ -138,10 +140,10 @@ levels(train_y) =c(0, 1)
 
 dtrain <- xgb.DMatrix(data =as.matrix(train_x), label = as.matrix((train_y)))
 
-bstSparse <- xgboost(data = dtrain, max.depth = 6, eta = 0.1, nthread = 4, nrounds = 1000 ,subsample = 0.8,objective = "binary:logistic")
+bstSparse <- xgboost(data = dtrain, max.depth = 5, eta = 0.01, nthread = 4, nrounds = 1000 ,subsample = 0.8,objective = "binary:logistic")
 
 pred <- predict(bstSparse, as.matrix(test_x), type="Response")
-preds = ifelse(pred>0.5 , 0,1)
-
+preds = ifelse(pred>=0.5 , 1,0)
+pred
 table(preds,test_y)
 
