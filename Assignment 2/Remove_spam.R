@@ -6,12 +6,8 @@ setwd(dir ="/Users/xavierverbrugge/SocialMediaGroup04_2")
 model <- readRDS("./Assignment 2/rf_spam_model.rds") #file is in the assingment2 folder
 
 #Load the file
-<<<<<<< HEAD
-tweet_df <- read.csv("/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin2.csv")
-=======
-tweet_df <- read.csv("C:\\Users\\Boedt\\OneDrive\\Bureaublad\\Csv_Scrapping\\Bitcoin2.csv")
->>>>>>> da6e71a92676d00a22af122830b56d93621275f0
-tweet_df <- tweet_df %>% distinct(text, .keep_all = TRUE)
+
+tweet_df <- read_twitter_csv("/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin2.csv")
 
 #add the necessary variables
 
@@ -19,15 +15,15 @@ tweet_df <- tweet_df %>% distinct(text, .keep_all = TRUE)
 tweet_df$nr_hashtags <- sapply(tweet_df$hashtags, function(x) if(!is.na(x)) length(str_split(x, " ")[[1]]) else 0)
 
 #age_account_days
-dates <- lapply(tweet_df$created_at, function(x) if(is.na(as.numeric(x))) as_date(x) else as_date(as_datetime(as.numeric(x))))
-dates <- dates %>% reduce(c)
-tweet_df$created_at <- dates
+#dates <- lapply(tweet_df$created_at, function(x) if(is.na(as.numeric(x))) as_date(x) else as_date(as_datetime(as.numeric(x))))
+#dates <- dates %>% reduce(c)
+#tweet_df$created_at <- dates
 
-dates <- lapply(tweet_df$account_created_at, function(x) if(is.na(as.numeric(x))) as_date(x) else as_date(as_datetime(as.numeric(x))))
-dates <- dates %>% reduce(c)
-tweet_df$account_created_at <- dates
-
-tweet_df$age_account_days <- as.numeric(tweet_df$created_at - tweet_df$account_created_at)
+#dates <- lapply(tweet_df$account_created_at, function(x) if(is.na(as.numeric(x))) as_date(x) else as_date(as_datetime(as.numeric(x))))
+#dates <- dates %>% reduce(c)
+#tweet_df$account_created_at <- dates
+as.Date(tweet_df$created_at)
+tweet_df$age_account_days <- as.numeric(as.Date(tweet_df$created_at) - as.Date(tweet_df$account_created_at))
 
 #Reputation
 tweet_df$Reputation <- (tweet_df$friends_count)/((tweet_df$friends_count + tweet_df$followers_count))
@@ -130,6 +126,6 @@ drops <- c("display_text_width", "nr_hashtags", "age_account_days",
 
 DF = Bitcoin_Without_Spam[ , !(names(Bitcoin_Without_Spam) %in% drops)]
 
-write_csv(DF, file = "/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin_Without_Spam.csv")
+rtweet::write_csv(DF, file = "/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin_Without_Spam.csv")
 
-
+rtweet::write_as_csv(DF,file_name = "/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin_Without_Spam_2.csv")
