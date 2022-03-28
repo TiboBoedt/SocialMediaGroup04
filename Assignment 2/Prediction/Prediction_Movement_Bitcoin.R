@@ -50,7 +50,6 @@ getQuantile <- function(df_variable){
   return(output)
 }
 
-
 # Aggregate sentiment based on number of followers a creator has
 
 #Create new df
@@ -59,9 +58,26 @@ names(Bitcoin_followers_w) =c("Sentiment","created_at")
 
 Bitcoin_followers_w$followers_count_quantile <- getQuantile(as.numeric(Bitcoin$followers_count))
 #Weigh the sentiment based on quantile value of creator number of followers
-Bitcoin_followers_w$weight_score <- Bitcoin_followers_w$followers_count_quantile*Bitcoin_followers_w$Sentiment
+library(dict)
+library(hash)
+h <- hash() 
+Weights = c(0.01,0.02,0.04, 0.05,0.08,0.1,0.12,0.15,0.18,0.25)
+for(i in range(1:10)){
+  h[[as.String(i)]] <- Weights[i]
+}
+
+list = list()
+for(i in 1:nrow(Bitcoin_followers_w)){
+  list = c(list,list(Bitcoin_followers_w$Sentiment[i]*h[[as.String(Bitcoin_followers_w$followers_count_quantile[i])]]))
+}
+list(Bitcoin_followers_w$Sentiment[1000]*h[[as.String(Bitcoin_followers_w$followers_count_quantile[100])]])
+
+Bitcoin_followers_w$Sentiment[107980]
+Bitcoin_followers_w$weight_score <- list
+
+#Bitcoin_followers_w$weight_score <- Bitcoin_followers_w$followers_count_quantile*Bitcoin_followers_w$Sentiment
 #Normalize the sentiment
-Bitcoin_followers_w$weight_score <- Bitcoin_followers_w$weight_score/sum(seq(1:10))
+#Bitcoin_followers_w$weight_score <- Bitcoin_followers_w$weight_score/sum(seq(1:10))
 
 score_daily_followers_w <- Bitcoin_followers_w %>% group_by(created_at)%>%
   summarise(sentiment_score = sum(weight_score))
@@ -79,15 +95,15 @@ val <- History[11:13,]
 test <- History[14:17,]
 
 #Select useful variables
-train_x = subset(train ,select = c("volume","market_cap","Close_Previous_Day","Aggregated_Sentiment"))
-val_x = subset(val ,select = c("volume","market_cap","Close_Previous_Day","Aggregated_Sentiment"))
-test_x = subset(test ,select = c("volume","market_cap","Close_Previous_Day","Aggregated_Sentiment"))
+train_x = subset(train ,select = c("volume","Close_Previous_Day","Aggregated_Sentiment"))
+val_x = subset(val ,select = c("volume","Close_Previous_Day","Aggregated_Sentiment"))
+test_x = subset(test ,select = c("volume","Close_Previous_Day","Aggregated_Sentiment"))
 
-############### Scaling the features #########
+############### Scaling the features ############
 
 # Can't use close of current day.
 
-Train_mask <- subset(train ,select = c("volume","market_cap","Close_Previous_Day","Aggregated_Sentiment"))
+Train_mask <- subset(train ,select = c("volume","Close_Previous_Day","Aggregated_Sentiment"))
 Train_means <- data.frame(as.list(Train_mask %>% apply(2, mean)))
 Train_stddevs <- data.frame(as.list(Train_mask %>% apply(2, sd)))
 
@@ -115,7 +131,7 @@ bstSparse <- xgboost(data = dtrain, max.depth = 6, eta = 0.1, nthread = 2, nroun
 xgb_params <- list("objective" = "binary:logistic")
 
 pred <- predict(bstSparse, as.matrix(val_x), type="class")
-preds = ifelse(pred>0.5 , 1,0)
+preds = ifelse(pred>0.5 , 0 ,1)
 
 table(preds,val_y)
 
@@ -142,7 +158,7 @@ dtrain <- xgb.DMatrix(data =as.matrix(train_x), label = as.matrix((train_y)))
 bstSparse <- xgboost(data = dtrain, max.depth = 6, eta = 0.1, nthread = 4, nrounds = 1000 ,subsample = 0.8,objective = "binary:logistic")
 
 pred <- predict(bstSparse, as.matrix(test_x), type="Response")
-preds = ifelse(pred>0.5 , 1,0)
+preds = ifelse(pred>0.5 , 0,1)
 
 table(preds,test_y)
 
