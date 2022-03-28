@@ -9,11 +9,11 @@ if (!require("pacman")) install.packages("pacman") ; require("pacman")
 p_load(SnowballC, slam, tm, RWeka, Matrix)
 Bing_Dict <- read_csv("./Assignment 2/bing_updated")
 
-SentimentReal <- read_csv("Tweets_And_Labels_2.csv")
+SentimentReal <- read_twitter_csv("Tweets_And_Labels_2.csv")
 Encoding(SentimentReal$text) <- 'latin'
 SentimentReal %>% glimpse()
 
-
+SentimentReal$text
 ############################ Variables  ########################################
 ################################################################################
 
@@ -257,7 +257,7 @@ p_load(xgboost)
 
 # "binary:logistic"
 levels(y_train) =c(0, 1, 2,3, 4)
-dtrain <- xgb.DMatrix(data =as.matrix(x), label = as.matrix((y_train)))
+dtrain <- xgb.DMatrix(data =as.matrix(train[,103:123]), label = as.matrix((y_train)))
 
 bstSparse <- xgboost(data = dtrain, max.depth = 5, eta = 0.01, nthread = 4, nrounds = 1000, num_class = 5 ,subsample = 0.8,objective = "multi:softmax")
 
@@ -318,6 +318,7 @@ xgb_trcontrol_1 = trainControl(
 levels(y_train) =c("VeryNegative", "Negative", "Neutral","Postive" , "VeryPostitive")
 
 library(future)
+library(caret)
 future::plan(multisession, workers = 4)
 
 # train the model for each parameter combination in the grid and  evaluate using Cross Validation
@@ -343,7 +344,7 @@ cv_model <- xgb.cv(params = xgb_params,
                    eta=0.01,
                    max_depth=5,
                    subsample = 0.8,
-                   nfold = cv.nfold,
+                   nfold = 5,
                    metrics = list("auc"),
                    verbose = 2,
                    prediction = TRUE)
@@ -369,7 +370,20 @@ cv_model <- xgb.cv(params = xgb_params,
 ######################@# BERT  ##############################
 #######################################################################################
 #https://towardsdatascience.com/sentiment-analysis-in-10-minutes-with-bert-and-hugging-face-294e8a04b671
+Sys.setenv(TF_KERAS=1) 
+reticulate::py_config()
 
+pretrained_path = '/Users/xavierverbrugge/Downloads/uncased_L-12_H-768_A-12'
+config_path = file.path(pretrained_path, 'bert_config.json')
+checkpoint_path = file.path(pretrained_path, 'bert_model.ckpt')
+vocab_path = file.path(pretrained_path, 'vocab.txt')
+
+reticulate::py_module_available('keras_bert')
+
+library(reticulate)
+k_bert = import('keras_bert')
+token_dict = k_bert$load_vocabulary(vocab_path)
+tokenizer = k_bert$Tokenizer(token_dict)
 
 
 ############################# NEURAL NETWORK ##########################################

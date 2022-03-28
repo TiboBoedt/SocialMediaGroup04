@@ -2,10 +2,15 @@
 #the Bitcoin_SPAM.R file
 
 #Load the model
-model <- readRDS("rf_spam_model.rds") #file is in the assingment2 folder
+setwd(dir ="/Users/xavierverbrugge/SocialMediaGroup04_2")
+model <- readRDS("./Assignment 2/rf_spam_model.rds") #file is in the assingment2 folder
 
 #Load the file
+<<<<<<< HEAD
+tweet_df <- read.csv("/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin2.csv")
+=======
 tweet_df <- read.csv("C:\\Users\\Boedt\\OneDrive\\Bureaublad\\Csv_Scrapping\\Bitcoin2.csv")
+>>>>>>> da6e71a92676d00a22af122830b56d93621275f0
 tweet_df <- tweet_df %>% distinct(text, .keep_all = TRUE)
 
 #add the necessary variables
@@ -115,4 +120,16 @@ levels(df_label) <- c("quality", "spam")
 tweet_df$label <- df_label
 
 correct_tweet_df <- tweet_df %>% filter(tweet_df$label == "quality")
+Bitcoin_Without_Spam = correct_tweet_df
+
+# Delete unnecessairy variables
+drops <- c("display_text_width", "nr_hashtags", "age_account_days", 
+                      "Reputation", "ld", "Activity",
+                      "friends_count", "ttr", "MentionsRatio", "digitsInName",
+                      "signal_words")
+
+DF = Bitcoin_Without_Spam[ , !(names(Bitcoin_Without_Spam) %in% drops)]
+
+write_csv(DF, file = "/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin_Without_Spam.csv")
+
 
