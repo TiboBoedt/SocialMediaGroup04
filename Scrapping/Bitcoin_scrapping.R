@@ -1,11 +1,16 @@
 get_token()
 
 setwd("/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Scraping")
+
+
+
+
 #strings
 search.string <- c("#bitcoin", "BTC", "bitcoin", "#BTC")
 
 for(i in 1:length(search.string)){
-  search <- search_tweets(search.string[i], n = 1000, lang = "en", include_rts = F)
+  search <- search_tweets(search.string[i], n = 1000, lang = "en", 
+                          include_rts = F)
   if(i == 1){
     tweets = search
   }
