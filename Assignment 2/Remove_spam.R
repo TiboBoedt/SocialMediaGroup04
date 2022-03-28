@@ -6,7 +6,11 @@ setwd(dir ="/Users/xavierverbrugge/SocialMediaGroup04_2")
 model <- readRDS("./Assignment 2/rf_spam_model.rds") #file is in the assingment2 folder
 
 #Load the file
+<<<<<<< HEAD
 tweet_df <- read.csv("/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin2.csv")
+=======
+tweet_df <- read.csv("C:\\Users\\Boedt\\OneDrive\\Bureaublad\\Csv_Scrapping\\Bitcoin2.csv")
+>>>>>>> da6e71a92676d00a22af122830b56d93621275f0
 tweet_df <- tweet_df %>% distinct(text, .keep_all = TRUE)
 
 #add the necessary variables
@@ -102,12 +106,13 @@ tweet_df$age_account_days[which(tweet_df$Activity == Inf)]
 tweet_df$Activity[which(tweet_df$Activity == Inf)] <- tweet_df$statuses_count[which(tweet_df$Activity == Inf)]
 
 tweet_df <- tweet_df %>% drop_na(Reputation)#same problem as test data we remove them as we assume them to be spam anyway
-
+tweet_df <- tweet_df %>% drop_na(Activity)
 #Prepare the dataset
 variables_to_use <- c("display_text_width", "nr_hashtags", "age_account_days", 
                       "Reputation", "ld", "Activity", "followers_count", 
                       "friends_count", "ttr", "MentionsRatio", "digitsInName",
                       "signal_words", "retweet_count")
+
 df_label <- predict(model, newdata = tweet_df[, variables_to_use])
 df_label <- factor(df_label)
 levels(df_label) <- c("quality", "spam")
