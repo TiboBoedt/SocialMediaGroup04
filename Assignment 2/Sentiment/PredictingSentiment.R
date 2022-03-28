@@ -10,8 +10,8 @@ p_load(SnowballC, slam, tm, RWeka, Matrix)
 setwd(dir ="/Users/xavierverbrugge/SocialMediaGroup04_2")
 Bing_Dict <- read_csv("./Assignment 2/bing_updated")
 
-SentimentReal <- read_csv("Tweets_And_Labels_2.csv")
-Bitcoin <- read_csv("//Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin_Without_Spam.csv")
+SentimentReal <- read_twitter_csv("Tweets_And_Labels_2.csv")
+Bitcoin <- read_twitter_csv("/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin_Without_Spam_2.csv")
 str(Bitcoin$text)
 
 Encoding(SentimentReal$text) <- 'latin'
@@ -22,9 +22,7 @@ Encoding(Bitcoin$text) <- 'latin'
 
 train <- SentimentReal
 test <- Bitcoin
-#Unable to read string
-test$text[1782] = " "
-test$text[54022] = " "
+
 
 ############################ Variables  ########################################
 ################################################################################
@@ -60,11 +58,6 @@ ExtractFeatures <- function(df){
   
   return(df)
 }
-which(is.na(test$text))
-#Remove NA's
-test$text[7778] = ""
-test$text[12560] = ""
-#Extract Features
 
 train <- ExtractFeatures(train)
 test <- ExtractFeatures(test)
@@ -144,7 +137,7 @@ x = x %>% select(order(colnames(x)))
 test_combined = test_combined  %>% select(order(colnames(test_combined )))
 
 #Modelling
-
+library(xgboost)
 levels(y_train) =c(0, 1, 2,3, 4)
 # Remove remaining NA
 which(is.na(y_train))
@@ -162,6 +155,6 @@ pred <- predict(bstSparse, as.matrix(test_combined))
 preds_rescaled = pred -2
 Bitcoin$Sentiment_Label_Pred = preds_rescaled
 
-rtweet::write_as_csv(Bitcoin, file_name = "/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin_Without_Spam_And_Labels.csv")
+rtweet::write_as_csv(Bitcoin, file_name = "/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin_Without_Spam_And_Labels_2.csv")
 
 

@@ -2,18 +2,19 @@
 ############################# SENTIMENT ML   ###################################
 ################################################################################
 
-############################ Data Understanding ################################
+############################ Importing Data  ###################################
 ################################################################################
 
 if (!require("pacman")) install.packages("pacman") ; require("pacman")
 p_load(SnowballC, slam, tm, RWeka, Matrix)
+setwd(dir ="/Users/xavierverbrugge/SocialMediaGroup04_2")
 Bing_Dict <- read_csv("./Assignment 2/bing_updated")
 
 SentimentReal <- read_twitter_csv("Tweets_And_Labels_2.csv")
 Encoding(SentimentReal$text) <- 'latin'
 SentimentReal %>% glimpse()
 
-SentimentReal$text
+
 ############################ Variables  ########################################
 ################################################################################
 
@@ -61,7 +62,9 @@ for (i in 1 : nrow(SentimentReal)){
 }
 
 SentimentReal$label <- as.factor(SentimentReal$Sentiment_label)
-library(RecordLinkage)
+
+#Only used for experimentation
+SentimentReal$label_binairy <- ifelse(SentimentReal$Sentiment_label>0, 1, 0)
 set.seed(1000) 
 
 ind <- sample(x = nrow(SentimentReal), size = nrow(SentimentReal), replace = FALSE)
@@ -138,22 +141,25 @@ valer <- as.data.frame(as.matrix(sm_val) %*% trainer$u %*% solve(diag(trainer$d)
 tester <- as.data.frame(as.matrix(sm_test) %*% trainer$u %*% solve(diag(trainer$d)))
 head(tester)
 
-######################## Modelling and Evaluation ##############################
+############################ Creating Variables  ###############################
 ################################################################################
 
 p_load(AUC, caret)
-#trainsform labels into 
+
 
 y_train <- as.factor(train$label)
 y_val <- as.factor(val$label)
 
-
+#Aggregate the SVD's and created variables
 x = as.data.frame(trainer$v)
 x = cbind(x, train[,103:123])
 
 validation = cbind(valer, val[,103:123])
 
-######################## Logistic Regression Binairy  ##################################
+######################## Modelling and Evaluation ##############################
+################################################################################
+
+######################## Logistic Regression Binairy  ##########################
 ################################################################################
 
 levels(train$label_binairy) =c("Postive" , "Negative")
@@ -169,6 +175,8 @@ library(pROC)
 roc_qda <- roc(response = as.factor(val$label_binairy), predictor =preds)
 plot(roc_qda, col="red", lwd=3, main="ROC curve QDA")
 auc(roc_qda)
+
+## 0.7004787 AUC
 
 ######################## Logistic Regression  ##################################
 ################################################################################
@@ -189,32 +197,7 @@ library(pROC)
 auc <- multiclass.roc(y_val,preds, levels = c(-2,-1,0, 1,2) )
 auc
 
-
-############################# Regularization ###################################
-################################################################################
-
-
-library(glmnet)
-# Find the best lambda using cross-validation
-set.seed(123) 
-x = as.data.frame(trainer$v)
-y = y_train
-
-cv.lasso <- cv.glmnet(x, y_train, alpha = 1, family = "multinomial")
-# Fit the final model on the training data
-model <- glmnet(x, y, alpha = 1, family = "multinomial",
-                lambda = cv.lasso$lambda.min)
-# Display regression coefficients
-coef(model)
-# Make predictions on the test data
-x.test <- model.matrix(diabetes ~., test.data)[,-1]
-probabilities <- model %>% predict(newx = x.test)
-predicted.classes <- ifelse(probabilities > 0.5, "pos", "neg")
-# Model accuracy
-observed.classes <- test.data$diabetes
-mean(predicted.classes == observed.classes)
-
-
+# AUC multiclass 0.674
 
 ############################# Random Forest ####################################
 ################################################################################
@@ -242,9 +225,9 @@ varImp(rf_model)
 #saveRDS(rf_model, "rf_spam_model.rds")
 preds_rf <- predict(rf_model, test_data[, variables_to_use], type = "response")
 
-x <- evalm(rf_model)
-x$roc
-x$stdres
+z <- evalm(rf_model)
+z$roc
+z$stdres
 table(preds_value, test_data$spam)
 
 
@@ -254,40 +237,8 @@ table(preds_value, test_data$spam)
 
 p_load(xgboost)
 
-
-# "binary:logistic"
 levels(y_train) =c(0, 1, 2,3, 4)
-dtrain <- xgb.DMatrix(data =as.matrix(train[,103:123]), label = as.matrix((y_train)))
-
-bstSparse <- xgboost(data = dtrain, max.depth = 5, eta = 0.01, nthread = 4, nrounds = 1000, num_class = 5 ,subsample = 0.8,objective = "multi:softmax")
-
-pred <- predict(bst, test$data)
-
-# save model to binary local file
-xgb.save(bst, "xgboost.model")
-
-##### CV fold ####
-
-numberOfClasses <- 5
-xgb_params <- list("objective" = "multi:softprob",
-                   "eval_metric" = "mlogloss",
-                   "num_class" = numberOfClasses)
-nround    <- 50 # number of XGBoost rounds
-cv.nfold  <- 5
-
-# Fit cv.nfold * cv.nround XGB models and save OOF predictions
-cv_model <- xgb.cv(params = xgb_params,
-                   data = dtrain, 
-                   nrounds = nround,
-                   nfold = cv.nfold,
-                   metrics = list("auc"),
-                   verbose = 2,
-                   prediction = TRUE)
-
-### View importance
-
-importance_matrix <- xgb.importance(model = bst)
-print(importance_matrix)
+dtrain <- xgb.DMatrix(data =as.matrix(x), label = as.matrix((y_train)))
 
 ########################### Grid Search XGboost #######################################
 #######################################################################################
@@ -331,44 +282,48 @@ xgb_train_2 = train(
   method = "xgbTree"
 )
 
-# scatter plot of the AUC against max_depth and eta
-ggplot(xgb_train_2$results, aes(x = as.factor(eta), y = max_depth, size = ROC, color = ROC)) +
-  geom_point() +
-  theme_bw() +
-  scale_size_continuous(guide = "none")
-
+numberOfClasses <- 5
+xgb_params <- list("objective" = "multi:softprob",
+                   "eval_metric" = "mlogloss",
+                   "num_class" = numberOfClasses)
 
 cv_model <- xgb.cv(params = xgb_params,
                    data = dtrain, 
-                   nrounds = 1000,
+                   nrounds = 500,
                    eta=0.01,
-                   max_depth=5,
+                   max_depth=6,
                    subsample = 0.8,
                    nfold = 5,
                    metrics = list("auc"),
                    verbose = 2,
                    prediction = TRUE)
 
-# Change depth of trees (look for 5,6) / Change subsamples
 
-# Change depth of trees (look for 5,6) / Change subsamples
+#72.23
+#Fitting nrounds = 500, max_depth = 6, eta = 0.01, gamma = 1, colsample_bytree = 1, min_child_weight = 1, subsample = 0.8 on full training set
 
-# 0.702352
-#Fitting nrounds = 100, max_depth = 5, eta = 0.1, gamma = 1, colsample_bytree = 1, min_child_weight = 1, subsample = 1 on full training set
 
-#71
-#Fitting nrounds = 100, max_depth = 5, eta = 0.1, gamma = 1, colsample_bytree = 1, min_child_weight = 1, subsample = 0.8 on full training set
+bstSparse <- xgboost(data = dtrain, max.depth = 6, eta = 0.01, nthread = 4, nrounds = 500, num_class = 5 ,subsample = 0.8,objective = "multi:softmax")
 
-#71.18
-#Fitting nrounds = 1000, max_depth = 5, eta = 0.01, gamma = 1, colsample_bytree = 1, min_child_weight = 1, subsample = 0.8 on full training set
+### View importance
 
-######################@# NEURAL NETWORK (Code professor) ##############################
-#######################################################################################
+importance_matrix <- xgb.importance(model = bstSparse)
+print(importance_matrix)
+xgb.ggplot.importance(importance_matrix)
 
+library("SHAPforxgboost")
+shap_values <- shap.values(xgb_model = bstSparse, X_train = as.matrix(x))
+
+shap_long <- shap.prep(xgb_model = bstSparse, X_train = as.matrix(x))
+# save model to binary local file
+xgb.save(bst, "xgboost.model")
 
 
 ######################@# BERT  ##############################
 #######################################################################################
+
+# --------> See python file
+
 #https://towardsdatascience.com/sentiment-analysis-in-10-minutes-with-bert-and-hugging-face-294e8a04b671
 Sys.setenv(TF_KERAS=1) 
 reticulate::py_config()
@@ -385,340 +340,4 @@ k_bert = import('keras_bert')
 token_dict = k_bert$load_vocabulary(vocab_path)
 tokenizer = k_bert$Tokenizer(token_dict)
 
-
-############################# NEURAL NETWORK ##########################################
-#######################################################################################
-
-# https://www.kaggle.com/code/taindow/deep-learning-with-r-sentiment-analysis/report
-
-# ‘Deep Learning with R’ by Francois Chollet and J.J. Allaire
-
-library(tidyverse) # importing, cleaning, visualising 
-library(tidytext) # working with text
-library(wordcloud) # visualising text
-library(gridExtra) # extra plot options
-library(grid) # extra plot options
-library(keras) # deep learning with keras
-
-
-# Combine 
-
-train = train %>% mutate(Split = "train")
-test = test %>% mutate(Split = "test")
-
-full = data.frame(rbind(train %>% select(-Sentiment), test))
-
-# Tokenizer -------------------------------------------------------------------
-
-# Setup some parameters
-
-max_words = 15000 # Maximum number of words to consider as features
-maxlen = 32 # Text cutoff after n words
-
-
-# Prepare to tokenize the text
-
-texts = full$Phrase
-
-tokenizer = text_tokenizer(num_words = max_words) %>% 
-  fit_text_tokenizer(texts)
-
-# Tokenize - i.e. convert text into a sequence of integers
-
-sequences = texts_to_sequences(tokenizer, texts)
-word_index = tokenizer$word_index
-
-# Pad out texts so everything is the same length
-
-data = pad_sequences(sequences, maxlen = maxlen)
-
-
-# Split back into train and test
-
-train_matrix = data[1:nrow(train),]
-test_matrix = data[(nrow(train)+1):nrow(data),]
-
-
-# Prepare training labels (need to be binary matrices)
-
-labels = train$Sentiment
-labels = labels %>%  data.frame() %>%
-  mutate(
-    V0 = ifelse(labels == 0, 1, 0),
-    V1 = ifelse(labels == 1, 1, 0),
-    V2 = ifelse(labels == 2, 1, 0),
-    V3 = ifelse(labels == 3, 1, 0),
-    V4 = ifelse(labels == 4, 1, 0)
-  ) %>% 
-  select(
-    V0,V1,V2,V3,V4
-  ) %>% as.matrix()
-
-
-# Prepare a validation set
-
-training_samples = nrow(train_matrix)*0.80
-validation_samples = nrow(train_matrix)*0.20
-
-indices = sample(1:nrow(train_matrix))
-training_indices = indices[1:training_samples]
-validation_indices = indices[(training_samples + 1): (training_samples + validation_samples)]
-
-x_train = train_matrix[training_indices,]
-y_train = labels[training_indices,]
-
-x_val = train_matrix[validation_indices,]
-y_val = labels[validation_indices,]
-
-
-# Embeddings 
-
-# Dimensions
-
-glove_wiki_embedding_dim = 300
-glove_twitter_embedding_dim = 200
-glove_crawl_embedding_dim = 300
-fast_wiki_embedding_dim = 300
-fast_crawl_embedding_dim = 300
-word2vec_news_embedding_dim = 300
-
-# Files (uploaded from local pc)
-
-glove_wiki_weights = readRDS("../input/embedding-weights/glove_wiki_300d_32.rds")
-glove_twitter_weights = readRDS("../input/embedding-weights/glove_twitter_200d_32.rds")
-glove_crawl_weights = readRDS("../input/embedding-weights/glove_crawl_300d_32.rds")
-fast_wiki_weights = readRDS("../input/embedding-weights/fasttext_wiki_300d_32.rds")
-fast_crawl_weights = readRDS("../input/embedding-weights/fasttext_crawl_300d_32.rds")
-word2vec_news_weights = readRDS("../input/embedding-weights/word2vec_news_300d_32.rds")
-
-# Model Architecture -------------------------------------------------------------------
-
-# Setup input
-
-input = layer_input(
-  shape = list(NULL),
-  dtype = "int32",
-  name = "input"
-)
-
-# Embedding layers
-
-encoded_1 = input %>% 
-  layer_embedding(input_dim = max_words, output_dim = glove_wiki_embedding_dim, name = "embedding_1") %>% 
-  layer_lstm(units = maxlen,
-             dropout = 0.2,
-             recurrent_dropout = 0.5,
-             return_sequences = FALSE) 
-
-encoded_2 = input %>% 
-  layer_embedding(input_dim = max_words, output_dim = glove_twitter_embedding_dim, name = "embedding_2") %>% 
-  layer_lstm(units = maxlen,
-             dropout = 0.2,
-             recurrent_dropout = 0.5,
-             return_sequences = FALSE) 
-
-encoded_3 = input %>% 
-  layer_embedding(input_dim = max_words, output_dim = glove_crawl_embedding_dim, name = "embedding_3") %>% 
-  layer_lstm(units = maxlen,
-             dropout = 0.2,
-             recurrent_dropout = 0.5,
-             return_sequences = FALSE)
-
-encoded_4 = input %>% 
-  layer_embedding(input_dim = max_words, output_dim = fast_wiki_embedding_dim, name = "embedding_4") %>% 
-  layer_lstm(units = maxlen,
-             dropout = 0.2,
-             recurrent_dropout = 0.5,
-             return_sequences = FALSE) 
-
-encoded_5 = input %>% 
-  layer_embedding(input_dim = max_words, output_dim = fast_crawl_embedding_dim, name = "embedding_5") %>% 
-  layer_lstm(units = maxlen,
-             dropout = 0.2,
-             recurrent_dropout = 0.5,
-             return_sequences = FALSE) 
-
-encoded_6 = input %>% 
-  layer_embedding(input_dim = max_words, output_dim = word2vec_news_embedding_dim, name = "embedding_6") %>% 
-  layer_lstm(units = maxlen,
-             dropout = 0.2,
-             recurrent_dropout = 0.5,
-             return_sequences = FALSE) 
-
-# Concatenate
-
-concatenated = layer_concatenate(list(encoded_1,encoded_2,encoded_3,encoded_4,encoded_5,encoded_6))
-
-
-# Dense layers
-
-dense = concatenated %>% 
-  layer_dropout(rate = 0.5) %>% 
-  layer_dense(units = 128, activation = "relu") %>% 
-  layer_dropout(rate = 0.5) %>% 
-  layer_dense(units = 5, activation = "softmax")
-
-
-# Bring model together
-
-model = keras_model(input, dense)
-
-# Freeze the embedding weights initially to prevent updates propgating back through and ruining our embedding
-
-get_layer(model, name = "embedding_1") %>% 
-  set_weights(list(glove_wiki_weights)) %>% 
-  freeze_weights()
-
-get_layer(model, name = "embedding_2") %>% 
-  set_weights(list(glove_twitter_weights)) %>% 
-  freeze_weights()
-
-get_layer(model, name = "embedding_3") %>% 
-  set_weights(list(glove_crawl_weights)) %>% 
-  freeze_weights()
-
-get_layer(model, name = "embedding_4") %>% 
-  set_weights(list(fast_wiki_weights)) %>% 
-  freeze_weights()
-
-get_layer(model, name = "embedding_5") %>% 
-  set_weights(list(fast_crawl_weights)) %>% 
-  freeze_weights()
-
-get_layer(model, name = "embedding_6") %>% 
-  set_weights(list(word2vec_news_weights)) %>% 
-  freeze_weights()
-
-
-# Compile
-
-model %>% compile(
-  optimizer = optimizer_rmsprop(lr = 0.001),
-  loss = "categorical_crossentropy",
-  metrics = "categorical_accuracy"
-)
-
-#Model Training #1
-
-# Early stopping condition
-
-callbacks_list = list(
-  callback_early_stopping(
-    monitor = 'val_loss', 
-    patience = 10
-  ))
-
-# Train model 
-
-history = model %>% fit(
-  x_train,
-  y_train,
-  batch_size = 2048,
-  validation_data = list(x_val, y_val),
-  epochs = 500,
-  view_metrics = FALSE,
-  verbose = 0,
-  callbacks =  callbacks_list
-)
-
-# Look at training results
-
-print(history)
-
-
-
-### DOC2VEC 
-# https://www.r-bloggers.com/2017/02/twitter-sentiment-analysis-with-machine-learning-in-r-using-doc2vec-approach/
-
-# loading packages
-library(twitteR)
-library(ROAuth)
-library(tidyverse)
-library(text2vec)
-library(caret)
-library(glmnet)
-library(ggrepel)
-
-### loading and preprocessing a training set of tweets
-# function for converting some symbols
-conv_fun <- function(x) iconv(x, "latin1", "ASCII", "")
-
-##### loading classified tweets ######
-# source: http://help.sentiment140.com/for-students/
-# 0 - the polarity of the tweet (0 = negative, 4 = positive)
-# 1 - the id of the tweet
-# 2 - the date of the tweet
-# 3 - the query. If there is no query, then this value is NO_QUERY.
-# 4 - the user that tweeted
-# 5 - the text of the tweet
-
-tweets_classified <- read_csv('training.1600000.processed.noemoticon.csv',
-                              col_names = c('sentiment', 'id', 'date', 'query', 'user', 'text')) %>%
-  # converting some symbols
-  dmap_at('text', conv_fun) %>%
-  # replacing class values
-  mutate(sentiment = ifelse(sentiment == 0, 0, 1))
-
-# data splitting on train and test
-set.seed(2340)
-trainIndex <- createDataPartition(tweets_classified$sentiment, p = 0.8, 
-                                  list = FALSE, 
-                                  times = 1)
-tweets_train <- tweets_classified[trainIndex, ]
-tweets_test <- tweets_classified[-trainIndex, ]
-
-######### doc2vec ########
-
-
-# define preprocessing function and tokenization function
-prep_fun <- tolower
-tok_fun <- word_tokenizer
-
-it_train <- itoken(tweets_train$text, 
-                   preprocessor = prep_fun, 
-                   tokenizer = tok_fun,
-                   ids = tweets_train$id,
-                   progressbar = TRUE)
-it_test <- itoken(tweets_test$text, 
-                  preprocessor = prep_fun, 
-                  tokenizer = tok_fun,
-                  ids = tweets_test$id,
-                  progressbar = TRUE)
-
-# creating vocabulary and document-term matrix
-vocab <- create_vocabulary(it_train)
-vectorizer <- vocab_vectorizer(vocab)
-dtm_train <- create_dtm(it_train, vectorizer)
-dtm_test <- create_dtm(it_test, vectorizer)
-# define tf-idf model
-tfidf <- TfIdf$new()
-# fit the model to the train data and transform it with the fitted model
-dtm_train_tfidf <- fit_transform(dtm_train, tfidf)
-dtm_test_tfidf <- fit_transform(dtm_test, tfidf)
-
-# train the model
-t1 <- Sys.time()
-glmnet_classifier <- cv.glmnet(x = dtm_train_tfidf, y = tweets_train[['sentiment']], 
-                               family = 'binomial', 
-                               # L1 penalty
-                               alpha = 1,
-                               # interested in the area under ROC curve
-                               type.measure = "auc",
-                               # 5-fold cross-validation
-                               nfolds = 5,
-                               # high value is less accurate, but has faster training
-                               thresh = 1e-3,
-                               # again lower number of iterations for faster training
-                               maxit = 1e3)
-print(difftime(Sys.time(), t1, units = 'mins'))
-
-plot(glmnet_classifier)
-print(paste("max AUC =", round(max(glmnet_classifier$cvm), 4)))
-
-preds <- predict(glmnet_classifier, dtm_test_tfidf, type = 'response')[ ,1]
-glmnet:::auc(as.numeric(tweets_test$sentiment), preds)
-
-# save the model for future using
-saveRDS(glmnet_classifier, 'glmnet_classifier.RDS')
-#######################################################
 
