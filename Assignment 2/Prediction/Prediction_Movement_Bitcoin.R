@@ -52,36 +52,19 @@ getQuantile <- function(df_variable){
 
 # Aggregate sentiment based on number of followers a creator has
 
-#Create new df
-Bitcoin_followers_w <- data.frame(Bitcoin$Sentiment_Label_Pred, Bitcoin$created_at)
-names(Bitcoin_followers_w) =c("Sentiment","created_at")
+Bitcoin$followers_count_quantile <- getQuantile(Bitcoin$followers_count)
 
-Bitcoin_followers_w$followers_count_quantile <- getQuantile(as.numeric(Bitcoin$followers_count))
-#Weigh the sentiment based on quantile value of creator number of followers
-library(dict)
-library(hash)
-h <- hash() 
-Weights = c(0.01,0.02,0.04, 0.05,0.08,0.1,0.12,0.15,0.18,0.25)
-for(i in range(1:10)){
-  h[[as.String(i)]] <- Weights[i]
-}
+Bitcoin_followers_w <- Bitcoin %>% group_by(created_at, followers_count_quantile) %>% summarise(sentiment = mean(Sentiment_Label_Pred))
 
-list = list()
-for(i in 1:nrow(Bitcoin_followers_w)){
-  list = c(list,list(Bitcoin_followers_w$Sentiment[i]*h[[as.String(Bitcoin_followers_w$followers_count_quantile[i])]]))
-}
-list(Bitcoin_followers_w$Sentiment[1000]*h[[as.String(Bitcoin_followers_w$followers_count_quantile[100])]])
+#we use the following weights for the highest quantile (10) until the lowest (1) ->
+#c(25%, 18%, 15%, 12%, 10%, 8%, 5%, 4%, 2%, 1%)
 
-Bitcoin_followers_w$Sentiment[107980]
-Bitcoin_followers_w$weight_score <- list
-
-#Bitcoin_followers_w$weight_score <- Bitcoin_followers_w$followers_count_quantile*Bitcoin_followers_w$Sentiment
-#Normalize the sentiment
-#Bitcoin_followers_w$weight_score <- Bitcoin_followers_w$weight_score/sum(seq(1:10))
-
-score_daily_followers_w <- Bitcoin_followers_w %>% group_by(created_at)%>%
-  summarise(sentiment_score = sum(weight_score))
-score_daily_followers_w 
+weight <- c(0.01, 0.02, 0.04, 0.05, 0.08, 0.1, 0.12, 0.15, 0.18, 0.25)
+Bitcoin_followers_w$weight_sentiment <- Bitcoin_followers_w$sentiment *
+  weight[Bitcoin_followers_w$followers_count_quantile]
+score_daily_followers_w <- Bitcoin_followers_w %>% group_by(created_at) %>%
+  summarise(sentiment_score = sum(weight_sentiment))
+score_daily_followers_w
 
 #Add Aggregated sentiment to data
 
