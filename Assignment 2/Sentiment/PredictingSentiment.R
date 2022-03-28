@@ -11,7 +11,9 @@ setwd(dir ="/Users/xavierverbrugge/SocialMediaGroup04_2")
 Bing_Dict <- read_csv("./Assignment 2/bing_updated")
 
 SentimentReal <- read_csv("Tweets_And_Labels_2.csv")
-Bitcoin <- read_csv("/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Scraping/Bitcoin.csv")
+Bitcoin <- read_csv("//Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin_Without_Spam.csv")
+str(Bitcoin$text)
+
 Encoding(SentimentReal$text) <- 'latin'
 Encoding(Bitcoin$text) <- 'latin'
 
@@ -20,6 +22,9 @@ Encoding(Bitcoin$text) <- 'latin'
 
 train <- SentimentReal
 test <- Bitcoin
+#Unable to read string
+test$text[1782] = " "
+test$text[54022] = " "
 
 ############################ Variables  ########################################
 ################################################################################
@@ -28,6 +33,7 @@ ExtractFeatures <- function(df){
   df$Nr_Exclemationmarks = countPunct(df, "!")
   df$Nr_QuestionMarks = countPunct(df, "?")
   df$Nr_OfPoints = countPunct(df, ".")
+  df$Nr_OfHashtags = countPunct(df, "#")
   df$Lexicon_Sentiment = getLexiconSentiment(df,Bing_Dict)
   
   df$Nr_OfPostiveUnigrams = countUnigramsSent(df,Bing_Dict ,"positive" )
@@ -54,10 +60,14 @@ ExtractFeatures <- function(df){
   
   return(df)
 }
-  
+which(is.na(test$text))
+#Remove NA's
+test$text[7778] = ""
+test$text[12560] = ""
+#Extract Features
+
 train <- ExtractFeatures(train)
 test <- ExtractFeatures(test)
-
 
 ############################ DTM Matrix ########################################
 ################################################################################
@@ -122,12 +132,12 @@ head(tester)
 
 ## Data gathering
 x = as.data.frame(trainer$v)
-x = cbind(x, train[,103:126])
+x = cbind(x, train[,103:127])
 
-test_combined = cbind(tester, test[,91:114])
+test_combined = cbind(tester, test[,90:114])
 
 
-y_train <- as.factor(train$label)
+y_train <- as.factor(train$Sentiment_label)
 
 #Order columns in the df alphabetically
 x = x %>% select(order(colnames(x)))
@@ -136,15 +146,22 @@ test_combined = test_combined  %>% select(order(colnames(test_combined )))
 #Modelling
 
 levels(y_train) =c(0, 1, 2,3, 4)
+# Remove remaining NA
+which(is.na(y_train))
+y_train[4762] = 0
+
 dtrain <- xgb.DMatrix(data =as.matrix(x), label = as.matrix((y_train)))
 
 bstSparse <- xgboost(data = dtrain, max.depth = 5, eta = 0.01, nthread = 4, nrounds = 1000, num_class = 5 ,subsample = 0.8,objective = "multi:softmax")
 
 pred <- predict(bstSparse, as.matrix(test_combined))
 
+
 #Rescale predictions
 #There is now data leakage if there are observations who are also in the bitcoin data set...
 preds_rescaled = pred -2
 Bitcoin$Sentiment_Label_Pred = preds_rescaled
 
-write_csv(Bitcoin, file = "/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin_And_Labels.csv")
+rtweet::write_as_csv(Bitcoin, file_name = "/Users/xavierverbrugge/Documents/School/Master/Sem 2/Social Media and Web Analytics/Groupwork/Bitcoin_Without_Spam_And_Labels.csv")
+
+
