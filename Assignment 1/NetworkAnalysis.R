@@ -1,5 +1,5 @@
 ###########################################################################
-######## Introduction to assignment #########
+######## NETWORK ANALYSIS #########
 ###########################################################################
 
 rm(list=ls()) #Clean the environment
@@ -15,13 +15,9 @@ source('tokensandkeys.R')
 get_token()
 token
 
-#provide your Twitter screen name (just an example)
+#provide your Twitter screen name 
 my_name <- "suysthomas"
-#provide the Twitter screen name of 4 of your followers
-follower_names <- c("dauwevercamer",
-                    "mma_crm",
-                    "_3s_",
-                    "matthbogaertFEB")
+
 
 #get the user- object for my_name (make sure we don't bump into extraction limits)
 #lookup_users does not have a retryonratelimit
@@ -45,9 +41,9 @@ while (status==FALSE) {
 glimpse(userInfo)
 
 # get user- objects for all followers of my_name
-# get_followers function has a retryonratelimit option, so you don't need the loop
-# at this point we extract all followers and not just the ones
-# This function returns the user IDs
+    # get_followers function has a retryonratelimit option, so you don't need the loop
+    # at this point we extract all followers and not just the ones
+    # This function returns the user IDs
 firstdegree <- get_followers(
   my_name, n = userInfo$followers_count, retryonratelimit = TRUE
 )
@@ -56,25 +52,24 @@ firstdegree <- get_followers(
 followers <- lookup_users(firstdegree$user_id) %>% 
   pull(screen_name)
 
-# this can take a while, depending on the size of the network
+    # this can take a while, depending on the size of the network
 
 #this results in a tbl with rows equal to our number of followers.
 #Let's check if the length is correct.
 length(followers)
-# 1549
+
 
 userInfo$followers_count
-# 1549
+
 
 #Take a look at the followers
 head(followers)
 
-#now select indices of our 4 followers in follower_names
 #and retrieve their user objects to get the second degree followers
-#(If you are afraid of bumping into the rate limits, use the above loop)
+    #(If you are afraid of bumping into the rate limits, use the above loop)
 seconddegree <- lookup_users(followers)
 
-#this should be four:
+#check if this is correct compared to Twitter page
 nrow(seconddegree)
 
 #see if we can find these followers
@@ -90,41 +85,35 @@ for (i in 1:nrow(seconddegree)) {
   
   followersseconddegree <- character(seconddegree$followers_count[i]) #preallocate vector
   
-  #If you would want to work with the names you should first get the follower IDs
-  #then look up the users and store these ones in the list
-  
   followersseconddegree <- get_followers(seconddegree$user_id[i], 
                                          retryonratelimit = TRUE) %>% pull(user_id)
   l[[i]] <- lookup_users(followersseconddegree) %>% pull(screen_name)
-  
-  #If you would solely work with the IDs, one line of code is enough
-  #l[[i]] <- get_followers(seconddegree$user_ids[i], 
-   #                       retryonratelimit = TRUE) %>% pull(user_id)
 }
 
 #let's have a look
 glimpse(l)
+save(l,file = 'l.Rdata')
 
-#now we have all the followers of four of our followers
+#now we have all the followers of our followers
 #let's add our followers to that list
 l[[length(l)+1]] <- followers
 names(l) <- c(seconddegree$screen_name,userInfo$screen_name)
 
 glimpse(l)
 
-#transform that list to a character vector of length 5.
+#transform that list to a character vector.
 #Each element in the vector contains all the followers of a user.
 
 mm <- do.call("c", lapply(l, paste, collapse=" "))
+
+# save file
 save(mm,file = "followers(offollowers).Rdata")
+
 ############### Process data to create adjacency matrix ###########
 
-# Note that we could also use another approach, e.g. start from edge lists; 
-# then, we should have added the user id to all his followers ids
-# Now, we show a different method that splits the character vector and creates an incidence matrix
-
-#Install and load the text mining package to preprocess the data
+#Install and load the text mining package to preprocess the data and load the data
 p_load(SnowballC, tm)
+load("followers(offollowers).Rdata")
 
 # transform that vector using the tm package to structure the unstructered data
 # we will dive deeper in the tm package when discussing 'the message' on SM
@@ -139,11 +128,6 @@ userfollower <- DocumentTermMatrix(myCorpus, control = list(wordLengths = c(0, I
 
 #we can also look at the actual matrix
 inspect(userfollower)
-#There are five rows (i.e., four followers and myself)
-#The columns are all the friends for the users in the rows
-#The values in the cells are either 0 or 1, to indicate a whether
-#the users in the columns are following the users in the rows
-
 
 ########################## Network Analysis ##############################
 #Targeting social network users using restricted network information
@@ -159,19 +143,6 @@ dim(A)
 
 #What does it look like?
 A[1:10,1:10]
-
-#This gives us the likelihood (a score from 1 to 5) that two users are connected.
-#This likelihood is determined based on our 5 initial users. For example:
-#If u1 (user 1) follows all of our five initial users and u2 also follows all of our
-#five users then u1 and u2 are most likely part of the same community
-#(as the five initial users) and connected.
-#If u1 follows all five users and u2 follows none of them then u1 is likely
-#to be part of the same community as the five initial users while u2 is not
-#(and hence not connected to u1).
-#If neither u1 and u2 follow any of the five initial users then they could be connected
-#but we have no way to know, unless we would be able to extract full network data.
-#However, as we extract information about more initial users we will become increasingly
-#sure that two users are (not) connected.
 
 # if the adjacency matrix is too large, then you can consider to only take the first 500
 # followers. This works good on a computer with 8GB RAM
@@ -195,10 +166,73 @@ par(mar=rep(0, 4))
 plot(g, layout=layout, vertex.label=NA,
      edge.curved=TRUE,vertex.size=3,
      vertex.color=c("green","red","blue")[ifelse(V(g)$name %in%
-                                                   names(igraph::degree(g)[tail(order(igraph::degree(g)),5)]) ==TRUE,1,
+                                                   names(igraph::degree(g)[tail(order(igraph::degree(g)),10)]) ==TRUE,1,
                                                  ifelse(V(g)$name %in%
-                                                          names(igraph::degree(g)[tail(order(igraph::betweenness(g)),10)]) ==TRUE,2,3))])
+                                                          names(igraph::degree(g)[tail(order(igraph::betweenness(g)),20)]) ==TRUE,2,3))])
 
-# The top 5 vertices based on degree are in green
-# The top 10 vertices based on betweenness (and not based on degree) are in red
+# The top 10 vertices based on degree are in green
+# The top 20 vertices based on betweenness (and not based on degree) are in red
 # All the other vertices are in blue
+
+# Rank vertices based on degree
+degreetable <- as.data.frame(cbind(V(g)$label,V(g)$degree))
+degreetable <- transform(degreetable, V2 = as.numeric(V2))
+groundtruth <- (degreetable%>%arrange(desc(V2)))
+
+############### Restrictiveness ###########
+
+# step 1: get followers: followers
+# step 2: get followers of followers: l
+# step 3: get correlation for different levels of restrictiveness
+size <- c(2:500)
+ufmatrix <- as.matrix(userfollower)
+correlation <- c()
+set.seed(67)
+correlationdf<- data.frame(row.names = size)
+for(j in 1:10){
+  randomsequence <- sample.int(500, 500)
+  for(i in 2: 500) {  
+      randomsubsequence <- randomsequence[1:i]
+      ufm <- ufmatrix[,randomsubsequence]
+
+    
+    adj <- t(ufm) %*% ufm
+    
+    graph <- graph.adjacency(adj, weighted=TRUE,
+                         mode ='undirected') %>% simplify()
+  
+    x <- V(graph)$name
+    y <- igraph::degree(graph)
+    degreesdf<- as.data.frame(cbind(x,y))
+    degreesdf <- transform(degreesdf, y = as.numeric(y))
+    currentranking <- (degreesdf%>%arrange(desc(y)))
+    currentranking_degrees <- currentranking$y
+    currentranking_names <- currentranking$x
+    groundtruthtemp <- (groundtruth %>% filter(V1 %in% currentranking_names))$V2
+
+    smcor <- cor(groundtruthtemp,currentranking_degrees,method="spearman")
+    
+    correlation <- c(correlation,smcor)
+    if(i == 500) {
+      colname <- paste("correlation_", j, sep = "")
+      correlationdf[colname] <- correlation
+      correlation <- c()
+    }
+  }
+}
+
+correlationdf$size <- size
+
+p_load(ggplot2)
+
+ggplot(correlationdf, aes(x=size)) + 
+  geom_line(aes(y = correlation_1), color = "#000000") + 
+  geom_line(aes(y = correlation_2), color = "#E69F00") +
+  geom_line(aes(y = correlation_3), color = "#56B4E9") +
+  geom_line(aes(y = correlation_4), color = "#009E73") +
+  geom_line(aes(y = correlation_5), color = "#D55E00") +
+  ylab("correlation") +
+  theme_bw()
+
+
+
