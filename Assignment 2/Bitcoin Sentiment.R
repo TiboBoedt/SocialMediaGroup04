@@ -1,6 +1,9 @@
 ################################################################################
 ################################ BITCOIN SENTIMENT #############################
 ################################################################################
+Bitcoin <- read_twitter_csv("Bitcoin2_no_spam.csv")
+Bitcoin$created_at <- as_date(Bitcoin$created_at)
+Bitcoin$account_created_at <- as_date(Bitcoin$account_created_at)
 head(Bitcoin, 10) #file die uiteindelijk geschreven wordt hier nog schrijven
 
 ### UNSUPERVISED METHOD
@@ -184,12 +187,13 @@ df_score_lexicon <- data.frame(Bitcoin, sentiment_score = score_lexicon)
 score_daily <- group_by(df_score_lexicon, created_at) %>% summarise(sentiment = mean(sentiment_score))
 
 ggplot(score_daily, aes(x = created_at, y = sentiment))+
-  geom_line(col = "dark red") +
+  geom_line(col = "deepskyblue1") +
   geom_hline(yintercept = 0, col = "blue")+
   ylim(-0.1,0.30)+
   xlab("Dates")+
   ylab("Sentiment Score")+
-  ggtitle("Sentiment Score on a daily base")
+  ggtitle("Sentiment Score on a daily base (lexicon approach)")+
+  theme(legend.position = "right")
 
 #on this graph we cleary se the movement of the sentiment over the days. The visualy 
 #check the relation of this sentiment with the price movement of bitcoin, we add
@@ -217,7 +221,7 @@ bitcoin_price_df$rel_close <- rel_close
 bitcoin_price_df$rel_close_1daylag <- c(NA, rel_close[1:length(rel_close)-1])
 
 ggplot(score_daily, aes(x = created_at, y = sentiment))+
-  geom_line(col = "dark red") +
+  geom_line(col = "deepskyblue1") +
   #geom_line(data = bitcoin_price_df, aes(x = Date, y = rel_close))+
   geom_line(data = bitcoin_price_df, aes(x = Date, y = rel_close_1daylag), col = "dark green")+
   geom_hline(yintercept = 0, col = "blue")+

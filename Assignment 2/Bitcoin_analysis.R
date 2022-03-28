@@ -3,7 +3,7 @@
 ################################################################################
 
 ### FILE
-Bitcoin <- correct_tweet_df #put in file
+Bitcoin <- read_twitter_csv("Bitcoin2_no_spam.csv") #put in file
 
 
 ### WORDCLOUD & WORDGRAPH 
@@ -19,7 +19,7 @@ length(unique_dates)
 
 unique_dates[1] #2022-03-10
 
-remove1 <- c("btc", "bitcoin", "crypto", "cryptocurrency", "eth", "amp", "price")
+remove1 <- c("btc", "bitcoin", "crypto", "cryptocurrency", "eth", "amp", "price", "btcusd", "just", "now", "btcusdt", "binance")
 generateWordcloud(Bitcoin, cloud1 = F, wordsToRemove = remove1, date = unique_dates[1])
 generateWordgraph(Bitcoin, date = unique_dates[1])
 
@@ -96,8 +96,8 @@ remove14 <- c("bitcoin", "btc", "eth", "crypto", "cryptocurrency", "price")
 generateWordcloud(Bitcoin, date = unique_dates[14], cloud1 = F, wordsToRemove = remove14)
 generateWordgraph(Bitcoin, date = unique_dates[14])
 
-unique_dates[15] #2022-03-24
-remove15 <- c("bitcoin", "btc", "eth", "crypto", "cryptocurrency", "price")
+unique_dates[15] #2022-03-25
+remove15 <- c("bitcoin", "btc", "eth", "crypto", "cryptocurrency", "price", "xrp", "ethereum", "binance")
 generateWordcloud(Bitcoin, date = unique_dates[15], cloud1 = F, wordsToRemove = remove15)
 generateWordgraph(Bitcoin, date = unique_dates[15])
 
@@ -284,7 +284,7 @@ for (i in 2:10) {
 
 (K <- AICs$k[which.min(AICs$aic)])
 
-topicmodel <- LDA(x = dtm, k = K, control = list(seed = 1234))
+topicmodel <- LDA(x = dtm, k = 5, control = list(seed = 1234))
 
 #The model is created, let's now take a closer look at the different topics
 #and their "content"
@@ -294,7 +294,7 @@ topicmodel <- LDA(x = dtm, k = K, control = list(seed = 1234))
 #it aren't real words. 
 
 #let's get the top 20 terms per topic to get a better understanding of the topics
-top_terms <- topic_term %>% group_by(topic) %>% top_n(20, beta) %>% ungroup() %>%
+top_terms <- topic_term %>% group_by(topic) %>% top_n(10, beta) %>% ungroup() %>%
   arrange(topic, desc(beta))
 top_terms[1:20,] #Topic 1
 top_terms[21:40,] #Topic 2
