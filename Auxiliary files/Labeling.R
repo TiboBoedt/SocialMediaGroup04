@@ -1,5 +1,44 @@
 Sentiments = read_csv("/Users/xavierverbrugge/Downloads/tweets_sentiment_toLabel.csv")
 
+#the right file has to be uploaded here, tweet_df results out of the remove_spam file
+dates <- lapply(tweet_df$created_at, function(x) if(is.na(as.numeric(x))) as_date(x) else as_date(as_datetime(as.numeric(x))))
+dates <- dates %>% reduce(c)
+bitcoin$created_at <- dates
+(unique_dates <- unique(tweet_df$created_at))
+day1 = correct_tweets%>%filter(created_at == "2022-03-11")
+day2= correct_tweets%>%filter(created_at == "2022-03-12")
+day3 = correct_tweets%>%filter(created_at == "2022-03-13")
+day4 = correct_tweets%>%filter(created_at == "2022-03-14")
+day5 = correct_tweets%>%filter(created_at == "2022-03-15")
+day6 = correct_tweets%>%filter(created_at == "2022-03-16")
+day7 = correct_tweets%>%filter(created_at == "2022-03-17")
+day8 = correct_tweets%>%filter(created_at == "2022-03-18")
+day9 = correct_tweets%>%filter(created_at == "2022-03-19")
+day10 = correct_tweets%>%filter(created_at == "2022-03-20")
+day11= correct_tweets%>%filter(created_at == "2022-03-21")
+day12= correct_tweets%>%filter(created_at == "2022-03-22")
+day13= correct_tweets%>%filter(created_at == "2022-03-23")
+
+set.seed(23)
+day1_sample =day1[sample(nrow(day1),385),]
+day2_sample =day2[sample(nrow(day2),385),]
+day3_sample =day3[sample(nrow(day3),385),]
+day4_sample =day4[sample(nrow(day4),385),]
+day5_sample =day5[sample(nrow(day5),385),]
+day6_sample =day6[sample(nrow(day6),385),]
+day7_sample =day7[sample(nrow(day7),385),]
+day8_sample =day8[sample(nrow(day8),385),]
+day9_sample =day9[sample(nrow(day9),385),]
+day10_sample =day10[sample(nrow(day10),385),]
+day11_sample =day11[sample(nrow(day11),385),]
+day12_sample =day12[sample(nrow(day12),385),]
+day13_sample =day13[sample(nrow(day13),385),]
+
+tweets_sentiment_toLabel = rbind(day1_sample, day2_sample, day3_sample,day4_sample,day5_sample,day6_sample,day7_sample,day8_sample, day9_sample,day10_sample, day11_sample, day12_sample, day13_sample)
+#write_csv(tweets_sentiment_toLabel, "tweets_sentiment_toLabel.csv")
+
+
+
 
 
 #labels <- numeric(850)
