@@ -147,3 +147,7 @@ preds = ifelse(pred>=0.5 , 1,0)
 pred
 table(preds,test_y)
 
+importance_matrix <- xgb.importance(model = bstSparse)
+print(importance_matrix)
+xgb.ggplot.importance(importance_matrix)
+
