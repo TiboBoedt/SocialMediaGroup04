@@ -261,6 +261,7 @@ ggplot(plot_df, aes(X1, X2, label = word, color = col)) +
 #analysis on the data. 
 
 #get and clean the text
+tic()
 topic_text <- Bitcoin %>% pull(text) %>% str_to_lower() %>% str_replace_all("[[:punct:]]", "") %>%
   str_replace_all("[[:digit:]]", "") %>% str_squish()
 
@@ -274,18 +275,18 @@ dtm <- freq %>% cast_dtm(document = doc, term = word, value = freq)
 
 ldas <- list()
 j <- 0
-for (i in 2:10) {
+for (i in 2:6) {
   j <- j+1
   print(i)
   ldas[[j]] <- LDA(x = dtm, k = i, control = list(seed = 1234))
 }
 
-(AICs <- data.frame(k = 2:10, aic = map_dbl(ldas, AIC)))
+(AICs <- data.frame(k = 2:6, aic = map_dbl(ldas, AIC)))
 
 (K <- AICs$k[which.min(AICs$aic)])
 
 topicmodel <- LDA(x = dtm, k = K, control = list(seed = 1234))
-
+toc()
 #The model is created, let's now take a closer look at the different topics
 #and their "content"
 
@@ -298,9 +299,6 @@ top_terms <- topic_term %>% group_by(topic) %>% top_n(10, beta) %>% ungroup() %>
   arrange(topic, desc(beta))
 top_terms[1:10,] #Topic 1
 top_terms[11:20,] #Topic 2
-top_terms[21:30,] #Topic 3
-top_terms[31:40,] #Topic 4
-top_terms[41:50,] #Topic 5
 
 #each topic seems to have bitcoin at the top -> this makes sense as all the tweets
 #we are analysing should be about bitcoin.
