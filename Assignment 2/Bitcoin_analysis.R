@@ -284,7 +284,7 @@ for (i in 2:10) {
 
 (K <- AICs$k[which.min(AICs$aic)])
 
-topicmodel <- LDA(x = dtm, k = 5, control = list(seed = 1234))
+topicmodel <- LDA(x = dtm, k = K, control = list(seed = 1234))
 
 #The model is created, let's now take a closer look at the different topics
 #and their "content"
@@ -296,11 +296,11 @@ topicmodel <- LDA(x = dtm, k = 5, control = list(seed = 1234))
 #let's get the top 20 terms per topic to get a better understanding of the topics
 top_terms <- topic_term %>% group_by(topic) %>% top_n(10, beta) %>% ungroup() %>%
   arrange(topic, desc(beta))
-top_terms[1:20,] #Topic 1
-top_terms[21:40,] #Topic 2
-top_terms[41:60,] #Topic 3
-top_terms[61:80,] #Topic 4
-top_terms[81:100,] #Topic 5
+top_terms[1:10,] #Topic 1
+top_terms[11:20,] #Topic 2
+top_terms[21:30,] #Topic 3
+top_terms[31:40,] #Topic 4
+top_terms[41:50,] #Topic 5
 
 #each topic seems to have bitcoin at the top -> this makes sense as all the tweets
 #we are analysing should be about bitcoin.
