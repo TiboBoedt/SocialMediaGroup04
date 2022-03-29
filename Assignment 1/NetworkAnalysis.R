@@ -170,6 +170,9 @@ plot(g, layout=layout, vertex.label=NA,
                                                  ifelse(V(g)$name %in%
                                                           names(igraph::degree(g)[tail(order(igraph::betweenness(g)),20)]) ==TRUE,2,3))])
 
+influencers_degree <- names(igraph::degree(g)[tail(order(igraph::degree(g)),10)])
+influencers_betweenness <- names(igraph::degree(g)[tail(order(igraph::betweenness(g)),10)])
+
 # The top 10 vertices based on degree are in green
 # The top 20 vertices based on betweenness (and not based on degree) are in red
 # All the other vertices are in blue
