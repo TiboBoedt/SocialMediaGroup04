@@ -19,9 +19,9 @@ labels <- tweets_data %>% pull(Sentiment_label)
 
 ## TRY PRE-TRAINED EMBEDDING
 maxlen <- 100                 # We will cut reviews after 100 words
-training_samples <- 4003       # We will be training on 200 samples
-test_samples <- 501
-validation_samples <- 501   # We will be validating on 10000 samples
+training_samples <- 3003       # We will be training on 200 samples
+test_samples <- 1001
+validation_samples <- 1001   # We will be validating on 10000 samples
 max_words <- 501            # We will only consider the top 10,000 words in the dataset
 
 text <- text %>% tolower() %>% removePunctuation() %>% removeWords(words = stopwords()) %>% stripWhitespace()
@@ -178,7 +178,7 @@ plot(history)
 
 
 ### LSTM 
-# BEST MODEL!!! OBTAINS ACCURACY OF 0.7075
+# BEST MODEL!!!
 max_features <- 1005
 model <- keras_model_sequential() %>% 
   layer_embedding(input_dim = max_features, output_dim = 100) %>%
@@ -201,15 +201,24 @@ get_layer(model, index = 1) %>%
 model %>% compile(
   optimizer = optimizer_rmsprop(0.0005),
   loss = "categorical_crossentropy",
-  metrics = c("accuracy")
+  metrics = c("AUC")
 )
 
 history <- model %>% keras::fit(
   X_train, Y_train,
-  epochs = 40,
-  batch_size = 128, 
+  epochs = 20,
+  batch_size = 128,
   validation_data = list(X_val, Y_val)
 )
+
+#test model on test set
+history <- model %>% keras::fit(
+  X_train_all, Y_train_all,
+  epochs = 15,
+  batch_size = 256
+)
+
+model %>% evaluate(X_test, Y_test)
 
 plot(history)
 ### NORMAL LSTM
