@@ -349,10 +349,11 @@ toc()
 score_daily$sentiment_tminus1day_7_3 <- one_day_back_w
 
 ggplot(score_daily, aes(x = created_at, y = sentiment))+
-  geom_line(col = "dark red")+
-  geom_line(aes(y = sentiment_tminus1day_7_3), col = "dark green")+
+  geom_line(col = "deepskyblue1")+
+  geom_line(aes(y = sentiment_tminus1day_7_3), col = "green1")+
   xlab("Date")+
-  ylab("Sentiment Score")
+  ylab("Sentiment Score")+
+  ggtitle("Impact of Sentiment of previous day")
 
 tic()
 two_day_back_w <- numeric(length(score_daily$sentiment))
@@ -373,11 +374,12 @@ toc()
 score_daily$sentiment_tminus2days_7_2_1 <- two_day_back_w
 
 ggplot(score_daily, aes(x = created_at, y = sentiment))+
-  geom_line(col = "dark red")+
+  geom_line(col = "deepskyblue1")+
   #geom_line(aes(y = sentiment_tminus1day_7_3), col = "dark green")+
-  geom_line(aes(y = sentiment_tminus2days_7_2_1), col = "purple")+
+  geom_line(aes(y = sentiment_tminus2days_7_2_1), col = "purple1")+
   xlab("Date")+
-  ylab("Sentiment Score")
+  ylab("Sentiment Score")+
+  ggtitle("Impact of Sentiment of previous two day")
 #we notice that it smoothens the curve 
 #let go back 2 days in time and give a 70%-20%-10% weight
 
