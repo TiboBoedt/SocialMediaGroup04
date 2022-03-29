@@ -318,6 +318,18 @@ shap_long <- shap.prep(xgb_model = bstSparse, X_train = as.matrix(x))
 # save model to binary local file
 xgb.save(bst, "xgboost.model")
 
+########################### LightGBM #######################################
+#######################################################################################
+pacman::p_load(pscl, ggplot2, ROCR, lightgbm, methods, Matrix, caret)
+levels(y_train) =c(0, 1, 2,3, 4)
+train_matrix = lgb.Dataset(data = as.matrix(x), label = as.matrix((y_train)))
+
+params = list(max_bin = 70,learning_rate = 0.001,
+              objective = "multiclass" ,max_depth =11, num_class = 5)
+set.seed(10)
+lgb.model.cv = lgb.cv(params = params, data = train_matrix, nrounds = 1500,early_stopping_rounds = 100, 
+                      eval_freq = 20, eval = "auc_mu",nfold = 10, stratified = TRUE)
+
 
 ######################@# BERT  ##############################
 #######################################################################################
