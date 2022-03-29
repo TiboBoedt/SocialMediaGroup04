@@ -1,4 +1,4 @@
-bing <- read_csv("bing_updated")
+bing <- read_csv("./Assignment 2/Sentiment/bing_updated")
 
 countUnigramsSent <- function(df, dict, sentiment){
   dict <- dict %>% filter(sentiment == sentiment)

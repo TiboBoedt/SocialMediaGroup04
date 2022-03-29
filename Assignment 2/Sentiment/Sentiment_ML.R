@@ -8,7 +8,7 @@
 if (!require("pacman")) install.packages("pacman") ; require("pacman")
 p_load(SnowballC, slam, tm, RWeka, Matrix)
 setwd(dir ="/Users/xavierverbrugge/SocialMediaGroup04_2")
-Bing_Dict <- read_csv("./Assignment 2/bing_updated")
+Bing_Dict <- read_csv("./Assignment 2/Sentiment/bing_updated")
 
 SentimentReal <- read_twitter_csv("Tweets_And_Labels_2.csv")
 Encoding(SentimentReal$text) <- 'latin'
